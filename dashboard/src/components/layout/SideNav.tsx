@@ -26,7 +26,7 @@ export default function SideNav() {
   const isDashboardActive = pathname === '/dashboard';
 
   return (
-    <aside className="fixed left-6 top-1/2 -translate-y-1/2 z-50">
+    <aside className="fixed left-3 top-1/2 -translate-y-1/2 z-50">
       {/* Compact Modern Side Navigation - Light Mode */}
       <div className="bg-[#5B50E8] rounded-[28px] p-2 shadow-xl">
         {/* Dashboard Icon at top - Separate with rounded top corners */}

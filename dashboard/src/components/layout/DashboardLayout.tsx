@@ -17,7 +17,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <Header />
       
       {/* Main Content Area - With left padding and top padding for header */}
-      <main className="min-h-screen pl-28 pt-16">
+      <main className="min-h-screen pl-18 pt-14">
         <div className="p-8">
           {children}
         </div>
