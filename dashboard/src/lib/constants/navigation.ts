@@ -5,6 +5,7 @@ import {
   Calendar,
   BarChart3,
   FolderOpen,
+  User
 } from "lucide-react";
 
 /**
@@ -67,5 +68,10 @@ export const navigationItems: NavItem[] = [
     name: "Files", 
     href: "/sample-page-5", 
     icon: FolderOpen 
+  },
+    {
+    name: "User",
+    href: "/user-management",
+    icon: User
   }
 ];
