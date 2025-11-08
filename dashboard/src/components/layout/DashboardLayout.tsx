@@ -1,6 +1,7 @@
 "use client";
 
 import SideNav from "./SideNav";
+import Header from "./Header";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -8,12 +9,15 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="min-h-screen bg-gray-50">
       {/* Compact Side Navigation */}
       <SideNav />
       
-      {/* Main Content Area - Full width */}
-      <main className="min-h-screen">
+      {/* Header */}
+      <Header />
+      
+      {/* Main Content Area - With left padding and top padding for header */}
+      <main className="min-h-screen pl-28 pt-16">
         <div className="p-8">
           {children}
         </div>
