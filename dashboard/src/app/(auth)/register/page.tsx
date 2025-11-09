@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+import { PageLoader } from "@/components/common";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -11,24 +13,20 @@ export default function RegisterPage() {
     password: "",
     confirmPassword: "",
   });
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setSuccess(false);
 
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+      toast.error("Passwords do not match");
       return;
     }
 
     // Validate password strength
     if (formData.password.length < 8) {
-      setError("Password must be at least 8 characters long");
+      toast.error("Password must be at least 8 characters long");
       return;
     }
 
@@ -50,50 +48,32 @@ export default function RegisterPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.message || "Registration failed");
+        toast.error(data.message || "Registration failed");
         return;
       }
 
-      setSuccess(true);
+      toast.success("Registration submitted! Waiting for admin approval. Redirecting to login...");
       setTimeout(() => {
         router.push("/login");
       }, 3000);
     } catch (err) {
-      setError("An error occurred during registration");
+      toast.error("An error occurred during registration");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h1>
-          <p className="text-gray-600">Register for dashboard access</p>
-        </div>
-
-        {success ? (
-          <div className="p-6 bg-green-50 border border-green-200 rounded-lg text-center">
-            <div className="text-green-600 mb-2">
-              <svg className="w-16 h-16 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Registration Submitted!</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Your registration request has been sent for approval. A superadmin will review your request shortly.
-            </p>
-            <p className="text-xs text-gray-500">Redirecting to login...</p>
+    <>
+      {isLoading && <PageLoader />}
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg">
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h1>
+            <p className="text-gray-600">Register for dashboard access</p>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600">{error}</p>
-              </div>
-            )}
 
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
                 Full Name
@@ -163,9 +143,7 @@ export default function RegisterPage() {
               {isLoading ? "Submitting..." : "Create Account"}
             </button>
           </form>
-        )}
 
-        {!success && (
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Already have an account?{" "}
@@ -174,8 +152,8 @@ export default function RegisterPage() {
               </a>
             </p>
           </div>
-        )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

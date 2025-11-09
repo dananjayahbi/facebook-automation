@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, User } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { navigationItems } from "@/lib/constants";
 
 /**
@@ -18,12 +19,22 @@ import { navigationItems } from "@/lib/constants";
  */
 export default function SideNav() {
   const pathname = usePathname();
+  const { data: session } = useSession();
 
   const isActive = (href: string) => {
     return pathname === href;
   };
 
   const isDashboardActive = pathname === '/dashboard';
+
+  // Filter navigation items based on user role
+  const filteredNavItems = navigationItems.filter((item) => {
+    // Hide User Management for non-superadmin users
+    if (item.href === "/user-management" && session?.user?.role !== "SUPERADMIN") {
+      return false;
+    }
+    return true;
+  });
 
   return (
     <aside className="fixed left-3 top-1/2 -translate-y-1/2 z-50">
@@ -54,7 +65,7 @@ export default function SideNav() {
 
         {/* Navigation Icons - Dynamically rendered from config */}
         <nav className="space-y-2">
-          {navigationItems.map((item) => {
+          {filteredNavItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
             
