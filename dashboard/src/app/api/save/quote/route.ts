@@ -42,8 +42,9 @@ export async function POST(request: Request) {
     const timestamp = new Date().toISOString();
     const escapeCSV = (value: string | undefined) => {
       if (!value) return "";
-      // Escape double quotes by doubling them and wrap in quotes
-      return `"${value.replace(/"/g, '""')}"`;
+      // Remove line breaks and trim, then escape double quotes by doubling them and wrap in quotes
+      const cleanedValue = value.replace(/[\r\n]+/g, ' ').trim();
+      return `"${cleanedValue.replace(/"/g, '""')}"`;
     };
 
     const csvRow = [
