@@ -3,7 +3,7 @@
 import { Select } from '@/components/ui';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { Sparkles, Copy, Check } from 'lucide-react';
+import { Sparkles, Copy, Check, Save } from 'lucide-react';
 
 const GEMINI_MODELS = [
   { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
@@ -36,11 +36,14 @@ export function QuotesGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedQuote, setGeneratedQuote] = useState('');
   const [copied, setCopied] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const handleGenerateQuote = async () => {
     setIsGenerating(true);
     setGeneratedQuote('');
     setCopied(false);
+    setSaved(false);
 
     try {
       const response = await fetch('/api/generate/quote', {
@@ -91,6 +94,39 @@ export function QuotesGenerator() {
     setCopied(true);
     toast.success('Quote copied to clipboard!');
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSaveQuote = async () => {
+    setIsSaving(true);
+
+    try {
+      const response = await fetch('/api/save/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quote: generatedQuote,
+          tone: selectedTone,
+          length: selectedLength,
+          niche: niche || undefined,
+          context: customContext || undefined,
+          model: selectedModel,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        toast.error(errorData.message || 'Failed to save quote');
+        return;
+      }
+
+      setSaved(true);
+      toast.success('Quote saved to CSV successfully!');
+    } catch (error) {
+      console.error('Error saving quote:', error);
+      toast.error('An error occurred while saving quote');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -185,13 +221,23 @@ export function QuotesGenerator() {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-gray-900">Generated Quote</h2>
           {generatedQuote && !isGenerating && (
-            <button
-              onClick={handleCopyQuote}
-              className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2 text-sm"
-            >
-              {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-              {copied ? 'Copied!' : 'Copy'}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleCopyQuote}
+                className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2 text-sm"
+              >
+                {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+              <button
+                onClick={handleSaveQuote}
+                disabled={isSaving || saved}
+                className="px-3 py-2 bg-[#5B50E8] text-white rounded-lg hover:bg-[#4A3FD7] transition-colors flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {saved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                {saved ? 'Saved!' : isSaving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
           )}
         </div>
 
