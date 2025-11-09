@@ -1,4 +1,4 @@
-import { Users, Blinds } from "lucide-react";
+import { Users, Blinds, ScanEye } from "lucide-react";
 
 /**
  * Navigation Configuration
@@ -40,5 +40,10 @@ export const navigationItems: NavItem[] = [
     name: "Generate Content",
     href: "/generate-content",
     icon: Blinds,
+  },
+  {
+    name: "View Content",
+    href: "/view-content",
+    icon: ScanEye,
   },
 ];
