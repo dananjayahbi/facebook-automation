@@ -1,12 +1,4 @@
-import {
-  GitBranch,
-  Plug,
-  FileText,
-  Calendar,
-  BarChart3,
-  FolderOpen,
-  User,
-} from "lucide-react";
+import { Users, Blinds } from "lucide-react";
 
 /**
  * Navigation Configuration
@@ -42,6 +34,11 @@ export const navigationItems: NavItem[] = [
   {
     name: "User",
     href: "/user-management",
-    icon: User,
+    icon: Users,
+  },
+  {
+    name: "Generate Content",
+    href: "/generate-content",
+    icon: Blinds,
   },
 ];
