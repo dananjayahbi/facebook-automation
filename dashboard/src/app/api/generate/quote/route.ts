@@ -13,7 +13,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { model } = await request.json();
+    const { model, tone, length, niche, context } = await request.json();
 
     if (!model) {
       return NextResponse.json(
@@ -36,7 +36,38 @@ export async function POST(request: Request) {
     const genAI = new GoogleGenerativeAI(apiKey);
     const geminiModel = genAI.getGenerativeModel({ model });
 
-    const prompt = `Generate a unique and inspiring motivational quote. The quote should be short, impactful, and not a famous saying. Focus on themes of perseverance, growth, and self-belief. Do not include any quotation marks or attributions. Keep it under 100 words.`;
+    // Build dynamic prompt based on optional parameters
+    let prompt = "Generate a unique, powerful";
+    
+    // Add tone
+    if (tone) {
+      prompt += ` and ${tone}`;
+    }
+    
+    prompt += " quote";
+
+    // Add niche/topic
+    if (niche) {
+      prompt += ` about ${niche}`;
+    }
+
+    // Add length specification
+    if (length === "short") {
+      prompt += ". Keep it concise and impactful (1-2 lines).";
+    } else if (length === "medium") {
+      prompt += ". Make it meaningful and complete (3-4 lines).";
+    } else if (length === "long") {
+      prompt += ". Create an elaborate and detailed quote (5-6 lines).";
+    } else {
+      prompt += ". Make it meaningful and impactful.";
+    }
+
+    // Add custom context if provided
+    if (context) {
+      prompt += ` Context: ${context}.`;
+    }
+
+    prompt += " Return only the quote itself, without any quotation marks, attribution, or extra formatting. Make it original and thought-provoking.";
 
     const result = await geminiModel.generateContentStream(prompt);
 
