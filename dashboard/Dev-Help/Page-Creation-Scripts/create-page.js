@@ -238,6 +238,8 @@ export default function ${pageFunctionName}() {
     fs.writeFileSync(layoutNavPath, layoutNavContent);
     console.log(`${colors.green}✓ Updated layoutNavigation.ts${colors.reset}`);
     
+    let migrationName = ''; // Declare outside if block for use in summary
+    
     if (!isLocked) {
       // Step 5: Update Prisma schema
       console.log(`\n${colors.blue}🗄️  Step 5: Updating Prisma Schema${colors.reset}`);
@@ -272,15 +274,23 @@ export default function ${pageFunctionName}() {
       // Step 6: Run Prisma migration
       console.log(`\n${colors.blue}🔄 Step 6: Running Prisma Migration${colors.reset}`);
       
-      const migrationName = `add_${settingsKey.toLowerCase()}_field`;
+      migrationName = `add_${settingsKey.toLowerCase()}_field`;
       try {
         execSync(`npx prisma migrate dev --name ${migrationName}`, {
           cwd: projectRoot,
           stdio: 'inherit'
         });
         console.log(`${colors.green}✓ Migration completed${colors.reset}`);
+        
+        // Run Prisma generate to update client
+        console.log(`\n${colors.blue}🔧 Step 6b: Regenerating Prisma Client${colors.reset}`);
+        execSync(`npx prisma generate`, {
+          cwd: projectRoot,
+          stdio: 'inherit'
+        });
+        console.log(`${colors.green}✓ Prisma Client regenerated${colors.reset}`);
       } catch (error) {
-        console.error(`${colors.red}✗ Migration failed${colors.reset}`);
+        console.error(`${colors.red}✗ Migration or Prisma generate failed${colors.reset}`);
         throw error;
       }
       
