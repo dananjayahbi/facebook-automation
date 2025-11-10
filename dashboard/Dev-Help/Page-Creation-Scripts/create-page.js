@@ -206,10 +206,11 @@ export default function ${pageFunctionName}() {
       if (interfaceMatch) {
         const fields = interfaceMatch[1];
         if (!fields.includes(settingsKey)) {
-          // Find the position before the closing brace and add new field with proper indentation
+          // Find the last line in the interface and add new field before the closing brace
+          // This ensures proper indentation and newlines
           layoutNavContent = layoutNavContent.replace(
-            /(export interface LayoutSettings \{[^}]+)(\n\})/s,
-            `$1  ${settingsKey}: boolean;\n}`
+            /(export interface LayoutSettings \{[\s\S]*?)(  \w+: boolean;)(\s*\n\})/,
+            `$1$2\n  ${settingsKey}: boolean;$3`
           );
         }
       }
@@ -318,29 +319,29 @@ export default function ${pageFunctionName}() {
         console.log(`${colors.yellow}⚠️  Field ${settingsKey} already exists in API route, skipping API update${colors.reset}`);
       } else {
         // Update GET method - create section
-        // Find the last property before closing brace in the create data object and add new field
+        // Find the last property before closing brace in the create data object
         apiContent = apiContent.replace(
-          /(settings = await prisma\.layoutSettings\.create\(\{\s*data:\s*\{[\s\S]*?),(\s*\n\s*)\},/m,
-          `$1,\n          ${settingsKey}: true$2},`
+          /(settings = await prisma\.layoutSettings\.create\(\{\s*data:\s*\{[\s\S]*?)(          \w+: \w+,?)(\s*\n        \},)/m,
+          `$1$2\n          ${settingsKey}: true,$3`
         );
         
         // Update PATCH method - destructure
-        // Add to the destructuring with proper spacing
+        // Add to the destructuring - find last variable in destructure
         apiContent = apiContent.replace(
-          /(const \{ showGenerateContent, showViewContent, showUploadContent)( \} = body;)/,
-          `$1, ${settingsKey}$2`
+          /(const \{[\s\S]*?)(\w+)( \} = body;)/,
+          `$1$2, ${settingsKey}$3`
         );
         
-        // Update PATCH method - create section (in else branch)
+        // Update PATCH method - create section (in if (!settings) block)
         apiContent = apiContent.replace(
-          /(if \(!settings\) \{[\s\S]*?settings = await prisma\.layoutSettings\.create\(\{[\s\S]*?data:\s*\{[\s\S]*?),(\s*\n\s*)\},/m,
-          `$1,\n          ${settingsKey}: ${settingsKey} ?? true$2},`
+          /(if \(!settings\) \{[\s\S]*?settings = await prisma\.layoutSettings\.create\(\{[\s\S]*?data:\s*\{[\s\S]*?)(          \w+: \w+ \?\? \w+,?)(\s*\n        \},)/m,
+          `$1$2\n          ${settingsKey}: ${settingsKey} ?? true,$3`
         );
         
-        // Update PATCH method - update section (in else branch)
+        // Update PATCH method - update section (in else block)
         apiContent = apiContent.replace(
-          /(settings = await prisma\.layoutSettings\.update\(\{[\s\S]*?data:\s*\{[\s\S]*?),(\s*\n\s*)\},/m,
-          `$1,\n          ${settingsKey}: ${settingsKey} ?? settings.${settingsKey}$2},`
+          /(} else \{[\s\S]*?settings = await prisma\.layoutSettings\.update\(\{[\s\S]*?data:\s*\{[\s\S]*?)(          \w+: \w+ \?\? settings\.\w+,?)(\s*\n        \},)/m,
+          `$1$2\n          ${settingsKey}: ${settingsKey} ?? settings.${settingsKey},$3`
         );
         
         fs.writeFileSync(apiRoutePath, apiContent);
@@ -357,18 +358,17 @@ export default function ${pageFunctionName}() {
       if (sideNavContent.includes(`${settingsKey}:`)) {
         console.log(`${colors.yellow}⚠️  Field ${settingsKey} already exists in SideNav, skipping SideNav update${colors.reset}`);
       } else {
-        // Update default state - find the useState initialization and add before closing brace
-        // Remove any trailing comma before adding new field
+        // Update default state - find the last property before closing brace and add new field
+        // Match the last property line ending with comma or no comma
         sideNavContent = sideNavContent.replace(
-          /(const \[layoutSettings, setLayoutSettings\] = useState<LayoutSettings>\(\{[\s\S]*?),(\s*\n\s*)\}\);/m,
-          `$1,\n    ${settingsKey}: true$2});`
+          /(const \[layoutSettings, setLayoutSettings\] = useState<LayoutSettings>\(\{[\s\S]*?)(    \w+: \w+,?)(\s*\n  \}\);)/m,
+          `$1$2\n    ${settingsKey}: true,$3`
         );
         
-        // Update fetchLayoutSettings - add to settings object before closing brace
-        // Remove any trailing comma before adding new field
+        // Update fetchLayoutSettings - find last property and add new field
         sideNavContent = sideNavContent.replace(
-          /(const settings: LayoutSettings = \{[\s\S]*?),(\s*\n\s*)\};/m,
-          `$1,\n        ${settingsKey}: data.${settingsKey}$2};`
+          /(const settings: LayoutSettings = \{[\s\S]*?)(        \w+: data\.\w+,?)(\s*\n      \};)/m,
+          `$1$2\n        ${settingsKey}: data.${settingsKey},$3`
         );
         
         fs.writeFileSync(sideNavPath, sideNavContent);
@@ -385,18 +385,16 @@ export default function ${pageFunctionName}() {
       if (settingsTabContent.includes(`${settingsKey}:`)) {
         console.log(`${colors.yellow}⚠️  Field ${settingsKey} already exists in LayoutSettingsTab, skipping LayoutSettingsTab update${colors.reset}`);
       } else {
-        // Update initial state - add before closing brace
-        // Remove any trailing comma before adding new field
+        // Update initial state - find the last property before closing brace and add new field
         settingsTabContent = settingsTabContent.replace(
-          /(const \[settings, setSettings\] = useState<LayoutSettings>\(\{[\s\S]*?),(\s*\n\s*)\}\);/m,
-          `$1,\n    ${settingsKey}: true$2});`
+          /(const \[settings, setSettings\] = useState<LayoutSettings>\(\{[\s\S]*?)(    \w+: \w+,?)(\s*\n  \}\);)/m,
+          `$1$2\n    ${settingsKey}: true,$3`
         );
         
-        // Update fetchSettings - add to setSettings object before closing brace
-        // Remove any trailing comma before adding new field
+        // Update fetchSettings - find last property in setSettings and add new field
         settingsTabContent = settingsTabContent.replace(
-          /(setSettings\(\{[\s\S]*?),(\s*\n\s*)\}\);/m,
-          `$1,\n          ${settingsKey}: data.${settingsKey}$2});`
+          /(setSettings\(\{[\s\S]*?)(          \w+: data\.\w+,?)(\s*\n        \}\);)/m,
+          `$1$2\n          ${settingsKey}: data.${settingsKey},$3`
         );
         
         fs.writeFileSync(settingsTabPath, settingsTabContent);
