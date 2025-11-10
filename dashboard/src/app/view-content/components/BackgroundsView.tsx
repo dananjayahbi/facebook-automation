@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Download, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react";
-import Image from "next/image";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
+import { ImageLightbox } from "./ImageLightbox";
+import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 
 interface ImageRecord {
   Timestamp: string;
@@ -27,6 +28,10 @@ export function BackgroundsView() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedImage, setSelectedImage] = useState<ImageRecord | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean;
+    imagePath: string | null;
+  }>({ isOpen: false, imagePath: null });
   const limit = 12;
 
   useEffect(() => {
@@ -79,9 +84,12 @@ export function BackgroundsView() {
   };
 
   const handleDelete = async (imagePath: string) => {
-    if (!confirm("Are you sure you want to delete this image?")) {
-      return;
-    }
+    setDeleteConfirm({ isOpen: true, imagePath });
+  };
+
+  const confirmDelete = async () => {
+    const { imagePath } = deleteConfirm;
+    if (!imagePath) return;
 
     try {
       const response = await fetch(`/api/images/delete?path=${encodeURIComponent(imagePath)}`, {
@@ -95,9 +103,11 @@ export function BackgroundsView() {
       toast.success("Image deleted successfully");
       fetchImages();
       setSelectedImage(null);
+      setDeleteConfirm({ isOpen: false, imagePath: null });
     } catch (error) {
       console.error("Error deleting image:", error);
       toast.error("Failed to delete image");
+      setDeleteConfirm({ isOpen: false, imagePath: null });
     }
   };
 
@@ -194,80 +204,26 @@ export function BackgroundsView() {
 
       {/* Lightbox Modal */}
       {selectedImage && (
-        <div
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-opacity-90 z-50 flex items-center justify-center p-4"
-          onClick={() => setSelectedImage(null)}
-        >
-          <div
-            className="relative max-w-6xl max-h-[90vh] bg-white rounded-lg overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close button */}
-            <button
-              onClick={() => setSelectedImage(null)}
-              className="absolute top-4 right-4 z-10 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100"
-            >
-              <X className="w-6 h-6" />
-            </button>
-
-            {/* Image */}
-            <div className="relative max-h-[70vh] overflow-hidden flex items-center justify-center">
-              <img
-                src={getImageUrl(selectedImage.ImagePath)}
-                alt={selectedImage.Prompt}
-                className="max-w-full max-h-[70vh] object-contain"
-              />
-            </div>
-
-            {/* Details */}
-            <div className="p-6 bg-gray-50">
-              <h3 className="text-lg font-semibold mb-2">Prompt</h3>
-              <p className="text-gray-700 mb-4">{selectedImage.Prompt}</p>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
-                <div>
-                  <p className="text-gray-500">Model</p>
-                  <p className="font-medium">{selectedImage.Model}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500">Aspect Ratio</p>
-                  <p className="font-medium">{selectedImage.AspectRatio}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500">Generated</p>
-                  <p className="font-medium">
-                    {new Date(selectedImage.Timestamp).toLocaleString()}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-500">File</p>
-                  <p className="font-medium text-xs truncate">
-                    {selectedImage.ImagePath.split("/").pop()}
-                  </p>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => handleDownload(selectedImage.ImagePath)}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#5B50E8] text-white rounded-lg hover:bg-[#4840C0] transition-colors"
-                >
-                  <Download className="w-4 h-4" />
-                  Download
-                </button>
-                <button
-                  onClick={() => handleDelete(selectedImage.ImagePath)}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ImageLightbox
+          image={selectedImage}
+          imageUrl={getImageUrl(selectedImage.ImagePath)}
+          onClose={() => setSelectedImage(null)}
+          onDelete={handleDelete}
+          onDownload={handleDownload}
+        />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        title="Delete Image?"
+        message="Are you sure you want to delete this image? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm({ isOpen: false, imagePath: null })}
+        danger
+      />
     </div>
   );
 }
