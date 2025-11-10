@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { Image as ImageIcon, Sparkles, Save, Check } from 'lucide-react';
 
 const IMAGE_MODELS = [
-  { value: "gemini-2.5-flash-image", label: "Gemini 2.5 Flash Image" },
+  { value: "gemini-2.0-flash-preview-image-generation", label: "Gemini 2.0 Flash Preview Image Generation" },
 ];
 
 const ASPECT_RATIOS = [
@@ -17,7 +17,7 @@ const ASPECT_RATIOS = [
 ];
 
 export function BackgroundGenerator() {
-  const [selectedModel, setSelectedModel] = useState("gemini-2.5-flash-image");
+  const [selectedModel, setSelectedModel] = useState("gemini-2.0-flash-preview-image-generation");
   const [selectedAspectRatio, setSelectedAspectRatio] = useState("3:4");
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);

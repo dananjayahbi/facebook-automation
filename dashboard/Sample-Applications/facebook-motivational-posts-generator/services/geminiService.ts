@@ -31,7 +31,7 @@ export const generateQuote = async (theme: string): Promise<string> => {
 export const generateBackgroundImage = async (theme: string): Promise<string> => {
   try {
     const response = await ai.models.generateImages({
-        model: 'imagen-4.0-generate-001',
+        model: 'gemini-2.5-flash-image',
         prompt: `An inspiring and visually stunning abstract background image representing the concept of "${theme}". It should have vibrant, harmonious colors and a sense of depth and texture. The image must be suitable as a background for a motivational quote, meaning it should not be too busy or have a clear focal point that would distract from text. No text or logos in the image.`,
         config: {
           numberOfImages: 1,

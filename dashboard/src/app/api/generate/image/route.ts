@@ -34,24 +34,25 @@ export async function POST(request: Request) {
     // Initialize GoogleGenAI
     const ai = new GoogleGenAI({ apiKey });
 
-    // Build the parts array with the prompt
-    const parts: Part[] = [{ text: prompt }];
+    // Build the parts array with the prompt including aspect ratio instruction
+    const enhancedPrompt = `${prompt}. Use ${aspectRatio} aspect ratio.`;
+    const parts: Part[] = [{ text: enhancedPrompt }];
 
     // Generate image using Gemini 2.5 Flash Image model
     const response = await ai.models.generateContent({
       model: model,
       contents: { parts },
       config: {
-        responseModalities: [Modality.IMAGE],
+        responseModalities: [Modality.IMAGE, Modality.TEXT],
       },
     });
 
     // Extract the image from the response
     const imagePart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
 
-    if (imagePart?.inlineData) {
+    if (imagePart?.inlineData?.data) {
       const base64ImageBytes: string = imagePart.inlineData.data;
-      const mimeType = imagePart.inlineData.mimeType;
+      const mimeType = imagePart.inlineData.mimeType || 'image/jpeg';
       const imageData = `data:${mimeType};base64,${base64ImageBytes}`;
       
       return NextResponse.json({
