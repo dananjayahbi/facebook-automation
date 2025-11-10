@@ -1,4 +1,4 @@
-import { Users, Blinds, ScanEye, Settings, User, LayoutDashboard, FileUp } from "lucide-react";
+import { Users, Blinds, ScanEye, Settings, User, LayoutDashboard, FileUp, TestTube } from "lucide-react";
 
 /**
  * Layout Navigation Configuration
@@ -34,8 +34,7 @@ export interface LayoutNavItem {
 export interface LayoutSettings {
   showGenerateContent: boolean;
   showViewContent: boolean;
-  showUploadContent: boolean;
-}
+  showUploadContent: boolean;}
 
 /**
  * All Layout Navigation Items
@@ -88,8 +87,7 @@ export const layoutNavigationItems: LayoutNavItem[] = [
     icon: FileUp,
     locked: false,
     settingsKey: "showUploadContent",
-  },
-  {
+  },{
     id: "settings",
     label: "Settings",
     description: "Application settings",

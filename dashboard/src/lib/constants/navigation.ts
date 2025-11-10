@@ -1,4 +1,4 @@
-import { Users, Blinds, ScanEye, Settings, FileUp } from "lucide-react";
+import { Users, Blinds, ScanEye, Settings, FileUp, TestTube } from "lucide-react";
 
 /**
  * Navigation Configuration
@@ -55,5 +55,4 @@ export const navigationItems: NavItem[] = [
     name: "Upload Content",
     href: "/upload-content",
     icon: FileUp,
-  },
-];
+  },];

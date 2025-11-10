@@ -23,8 +23,7 @@ export default function SideNav() {
   const [layoutSettings, setLayoutSettings] = useState<LayoutSettings>({
     showGenerateContent: true,
     showViewContent: true,
-    showUploadContent: true,
-  });
+    showUploadContent: true,  });
 
   const [isMounted, setIsMounted] = useState(false);
 
@@ -35,8 +34,7 @@ export default function SideNav() {
       const settings: LayoutSettings = {
         showGenerateContent: data.showGenerateContent,
         showViewContent: data.showViewContent,
-        showUploadContent: data.showUploadContent,
-      };
+        showUploadContent: data.showUploadContent,      };
       
       setLayoutSettings(settings);
       

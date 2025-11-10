@@ -9,8 +9,7 @@ export default function LayoutSettingsTab() {
   const [settings, setSettings] = useState<LayoutSettings>({
     showGenerateContent: true,
     showViewContent: true,
-    showUploadContent: true,
-  });
+    showUploadContent: true,  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -27,8 +26,7 @@ export default function LayoutSettingsTab() {
         setSettings({
           showGenerateContent: data.showGenerateContent,
           showViewContent: data.showViewContent,
-          showUploadContent: data.showUploadContent,
-        });
+          showUploadContent: data.showUploadContent,        });
       }
     } catch (error) {
       console.error("Error fetching layout settings:", error);
