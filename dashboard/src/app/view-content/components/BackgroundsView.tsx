@@ -79,8 +79,24 @@ export function BackgroundsView() {
     // Extract filename from path like "src/assets/gen-images/uuid.jpg"
     const filename = imagePath.split("/").pop();
     const url = `/api/images/${filename}`;
-    console.log("Image URL:", imagePath, "→", url);
+    console.log("🖼️ Image URL:", imagePath, "→", url);
     return url;
+  };
+
+  const getGridRowSpan = (aspectRatio: string): number => {
+    // Calculate row span based on aspect ratio for masonry effect
+    switch (aspectRatio) {
+      case "1:1":
+        return 1; // Square - 1 row
+      case "4:3":
+        return 1; // Landscape - 1 row (slightly wider)
+      case "3:4":
+        return 2; // Portrait - 2 rows (taller)
+      case "9:16":
+        return 3; // Tall portrait - 3 rows (very tall)
+      default:
+        return 1;
+    }
   };
 
   const handleDelete = async (imagePath: string) => {
@@ -139,37 +155,42 @@ export function BackgroundsView() {
 
   return (
     <div className="space-y-6">
-      {/* Gallery Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {/* Gallery Grid - Masonry Layout */}
+      <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
         {images.map((image, index) => (
           <div
             key={`${image.ImagePath}-${index}`}
-            className="group relative bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow cursor-pointer"
-            onClick={() => setSelectedImage(image)}
+            className="break-inside-avoid mb-6"
           >
-            <div className="aspect-square relative bg-gray-100">
-              <img
-                src={getImageUrl(image.ImagePath)}
-                alt={image.Prompt}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            </div>
-            
-            {/* Overlay on hover */}
-            <div className="absolute inset-0 bg-black/20 backdrop-blur-sm group-hover:bg-opacity-60 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-              <div className="text-white text-center p-4">
-                <p className="text-sm line-clamp-3">{image.Prompt}</p>
+            <div
+              className="group relative bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow cursor-pointer"
+              onClick={() => setSelectedImage(image)}
+            >
+              {/* Image with natural aspect ratio */}
+              <div className="relative w-full bg-gray-100">
+                <img
+                  src={getImageUrl(image.ImagePath)}
+                  alt={image.Prompt}
+                  className="w-full h-auto"
+                />
               </div>
-            </div>
+              
+              {/* Overlay on hover */}
+              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                <div className="text-white text-center p-4">
+                  <p className="text-sm line-clamp-3">{image.Prompt}</p>
+                </div>
+              </div>
 
-            {/* Info bar */}
-            <div className="p-3 bg-white border-t">
-              <p className="text-xs text-gray-500 truncate">
-                {new Date(image.Timestamp).toLocaleDateString()}
-              </p>
-              <p className="text-xs text-gray-400 truncate mt-1">
-                {image.Model} • {image.AspectRatio}
-              </p>
+              {/* Info bar */}
+              <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 via-black/50 to-transparent">
+                <p className="text-xs text-white truncate font-medium">
+                  {new Date(image.Timestamp).toLocaleDateString()}
+                </p>
+                <p className="text-xs text-gray-200 truncate mt-1">
+                  {image.AspectRatio} • {image.Model.split('-').slice(0, 3).join('-')}
+                </p>
+              </div>
             </div>
           </div>
         ))}
