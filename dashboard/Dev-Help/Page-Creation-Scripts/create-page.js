@@ -201,13 +201,16 @@ export default function ${pageFunctionName}() {
     
     // Update LayoutSettings interface if not locked
     if (!isLocked) {
-      const interfaceRegex = /export interface LayoutSettings \{([^}]+)\}/;
+      const interfaceRegex = /export interface LayoutSettings \{([^}]+)\}/s;
       const interfaceMatch = layoutNavContent.match(interfaceRegex);
       if (interfaceMatch) {
         const fields = interfaceMatch[1];
         if (!fields.includes(settingsKey)) {
-          const newFields = fields.trim() + `\n  ${settingsKey}: boolean;`;
-          layoutNavContent = layoutNavContent.replace(interfaceRegex, `export interface LayoutSettings {\n${newFields}\n}`);
+          // Find the position before the closing brace and add new field with proper indentation
+          layoutNavContent = layoutNavContent.replace(
+            /(export interface LayoutSettings \{[^}]+)(\n\})/s,
+            `$1  ${settingsKey}: boolean;\n}`
+          );
         }
       }
     }
@@ -310,32 +313,39 @@ export default function ${pageFunctionName}() {
       const apiRoutePath = path.join(projectRoot, 'src', 'app', 'api', 'settings', 'layout-settings', 'route.ts');
       let apiContent = fs.readFileSync(apiRoutePath, 'utf8');
       
-      // Update GET method - create section
-      apiContent = apiContent.replace(
-        /(settings = await prisma\.layoutSettings\.create\(\{\s*data:\s*\{[^}]+)/,
-        `$1\n          ${settingsKey}: true,`
-      );
-      
-      // Update PATCH method - destructure
-      apiContent = apiContent.replace(
-        /(const \{[^}]+)\}/,
-        `$1, ${settingsKey} }`
-      );
-      
-      // Update PATCH method - create section
-      apiContent = apiContent.replace(
-        /(settings = await prisma\.layoutSettings\.create\(\{\s*data:\s*\{(?:[^}]|\n)+?showUploadContent:[^,\n]+,)/,
-        `$1\n          ${settingsKey}: ${settingsKey} ?? true,`
-      );
-      
-      // Update PATCH method - update section
-      apiContent = apiContent.replace(
-        /(settings = await prisma\.layoutSettings\.update\(\{[^}]+data:\s*\{(?:[^}]|\n)+?showUploadContent:[^,\n]+,)/,
-        `$1\n          ${settingsKey}: ${settingsKey} ?? settings.${settingsKey},`
-      );
-      
-      fs.writeFileSync(apiRoutePath, apiContent);
-      console.log(`${colors.green}✓ Updated API route${colors.reset}`);
+      // Check if field already exists in API route
+      if (apiContent.includes(settingsKey)) {
+        console.log(`${colors.yellow}⚠️  Field ${settingsKey} already exists in API route, skipping API update${colors.reset}`);
+      } else {
+        // Update GET method - create section
+        // Find the last property before closing brace in the create data object
+        apiContent = apiContent.replace(
+          /(settings = await prisma\.layoutSettings\.create\(\{\s*data:\s*\{[\s\S]*?)(,?\s*)\n(\s*)\}/m,
+          `$1,\n$3  ${settingsKey}: true,$2\n$3}`
+        );
+        
+        // Update PATCH method - destructure
+        // Add to the destructuring with proper spacing
+        apiContent = apiContent.replace(
+          /(const \{ showGenerateContent, showViewContent, showUploadContent)( \} = body;)/,
+          `$1, ${settingsKey}$2`
+        );
+        
+        // Update PATCH method - create section (in else branch)
+        apiContent = apiContent.replace(
+          /(if \(!settings\) \{[\s\S]*?settings = await prisma\.layoutSettings\.create\(\{[\s\S]*?data:\s*\{[\s\S]*?)(,?\s*)\n(\s*)\}/m,
+          `$1,\n$3  ${settingsKey}: ${settingsKey} ?? true,$2\n$3}`
+        );
+        
+        // Update PATCH method - update section (in else branch)
+        apiContent = apiContent.replace(
+          /(settings = await prisma\.layoutSettings\.update\(\{[\s\S]*?data:\s*\{[\s\S]*?)(,?\s*)\n(\s*)\}/m,
+          `$1,\n$3  ${settingsKey}: ${settingsKey} ?? settings.${settingsKey},$2\n$3}`
+        );
+        
+        fs.writeFileSync(apiRoutePath, apiContent);
+        console.log(`${colors.green}✓ Updated API route${colors.reset}`);
+      }
       
       // Step 8: Update SideNav
       console.log(`\n${colors.blue}🎨 Step 8: Updating SideNav Component${colors.reset}`);
@@ -343,20 +353,25 @@ export default function ${pageFunctionName}() {
       const sideNavPath = path.join(projectRoot, 'src', 'components', 'layout', 'SideNav.tsx');
       let sideNavContent = fs.readFileSync(sideNavPath, 'utf8');
       
-      // Update default state
-      sideNavContent = sideNavContent.replace(
-        /(const \[layoutSettings, setLayoutSettings\] = useState<LayoutSettings>\(\{[^}]+)\}/,
-        `$1,\n    ${settingsKey}: true,\n  }`
-      );
-      
-      // Update fetchLayoutSettings
-      sideNavContent = sideNavContent.replace(
-        /(const settings: LayoutSettings = \{[^}]+)\}/,
-        `$1,\n        ${settingsKey}: data.${settingsKey},\n      }`
-      );
-      
-      fs.writeFileSync(sideNavPath, sideNavContent);
-      console.log(`${colors.green}✓ Updated SideNav.tsx${colors.reset}`);
+      // Check if field already exists
+      if (sideNavContent.includes(`${settingsKey}:`)) {
+        console.log(`${colors.yellow}⚠️  Field ${settingsKey} already exists in SideNav, skipping SideNav update${colors.reset}`);
+      } else {
+        // Update default state - find the useState initialization and add before closing brace
+        sideNavContent = sideNavContent.replace(
+          /(const \[layoutSettings, setLayoutSettings\] = useState<LayoutSettings>\(\{[\s\S]*?)(,?\s*\n)(\s*)\}\);/m,
+          `$1,\n$3  ${settingsKey}: true,$2$3});`
+        );
+        
+        // Update fetchLayoutSettings - add to settings object before closing brace
+        sideNavContent = sideNavContent.replace(
+          /(const settings: LayoutSettings = \{[\s\S]*?)(,?\s*\n)(\s*)\};/m,
+          `$1,\n$3  ${settingsKey}: data.${settingsKey},$2$3};`
+        );
+        
+        fs.writeFileSync(sideNavPath, sideNavContent);
+        console.log(`${colors.green}✓ Updated SideNav.tsx${colors.reset}`);
+      }
       
       // Step 9: Update LayoutSettingsTab
       console.log(`\n${colors.blue}⚙️  Step 9: Updating LayoutSettingsTab Component${colors.reset}`);
@@ -364,20 +379,25 @@ export default function ${pageFunctionName}() {
       const settingsTabPath = path.join(projectRoot, 'src', 'app', 'settings', 'components', 'LayoutSettingsTab.tsx');
       let settingsTabContent = fs.readFileSync(settingsTabPath, 'utf8');
       
-      // Update initial state
-      settingsTabContent = settingsTabContent.replace(
-        /(const \[settings, setSettings\] = useState<LayoutSettings>\(\{[^}]+)\}/,
-        `$1,\n    ${settingsKey}: true,\n  }`
-      );
-      
-      // Update fetchSettings
-      settingsTabContent = settingsTabContent.replace(
-        /(setSettings\(\{[^}]+)\}/,
-        `$1,\n          ${settingsKey}: data.${settingsKey},\n        }`
-      );
-      
-      fs.writeFileSync(settingsTabPath, settingsTabContent);
-      console.log(`${colors.green}✓ Updated LayoutSettingsTab.tsx${colors.reset}`);
+      // Check if field already exists
+      if (settingsTabContent.includes(`${settingsKey}:`)) {
+        console.log(`${colors.yellow}⚠️  Field ${settingsKey} already exists in LayoutSettingsTab, skipping LayoutSettingsTab update${colors.reset}`);
+      } else {
+        // Update initial state - add before closing brace
+        settingsTabContent = settingsTabContent.replace(
+          /(const \[settings, setSettings\] = useState<LayoutSettings>\(\{[\s\S]*?)(,?\s*\n)(\s*)\}\);/m,
+          `$1,\n$3  ${settingsKey}: true,$2$3});`
+        );
+        
+        // Update fetchSettings - add to setSettings object before closing brace
+        settingsTabContent = settingsTabContent.replace(
+          /(setSettings\(\{[\s\S]*?)(,?\s*\n)(\s*)\}\);/m,
+          `$1,\n$3  ${settingsKey}: data.${settingsKey},$2$3});`
+        );
+        
+        fs.writeFileSync(settingsTabPath, settingsTabContent);
+        console.log(`${colors.green}✓ Updated LayoutSettingsTab.tsx${colors.reset}`);
+      }
     } else {
       console.log(`\n${colors.yellow}ℹ️  Skipping schema/database updates (page is locked/always visible)${colors.reset}`);
     }
