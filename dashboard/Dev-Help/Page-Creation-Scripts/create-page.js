@@ -318,10 +318,10 @@ export default function ${pageFunctionName}() {
         console.log(`${colors.yellow}⚠️  Field ${settingsKey} already exists in API route, skipping API update${colors.reset}`);
       } else {
         // Update GET method - create section
-        // Find the last property before closing brace in the create data object
+        // Find the last property before closing brace in the create data object and add new field
         apiContent = apiContent.replace(
-          /(settings = await prisma\.layoutSettings\.create\(\{\s*data:\s*\{[\s\S]*?)(,?\s*)\n(\s*)\}/m,
-          `$1,\n$3  ${settingsKey}: true,$2\n$3}`
+          /(settings = await prisma\.layoutSettings\.create\(\{\s*data:\s*\{[\s\S]*?),(\s*\n\s*)\},/m,
+          `$1,\n          ${settingsKey}: true$2},`
         );
         
         // Update PATCH method - destructure
@@ -333,14 +333,14 @@ export default function ${pageFunctionName}() {
         
         // Update PATCH method - create section (in else branch)
         apiContent = apiContent.replace(
-          /(if \(!settings\) \{[\s\S]*?settings = await prisma\.layoutSettings\.create\(\{[\s\S]*?data:\s*\{[\s\S]*?)(,?\s*)\n(\s*)\}/m,
-          `$1,\n$3  ${settingsKey}: ${settingsKey} ?? true,$2\n$3}`
+          /(if \(!settings\) \{[\s\S]*?settings = await prisma\.layoutSettings\.create\(\{[\s\S]*?data:\s*\{[\s\S]*?),(\s*\n\s*)\},/m,
+          `$1,\n          ${settingsKey}: ${settingsKey} ?? true$2},`
         );
         
         // Update PATCH method - update section (in else branch)
         apiContent = apiContent.replace(
-          /(settings = await prisma\.layoutSettings\.update\(\{[\s\S]*?data:\s*\{[\s\S]*?)(,?\s*)\n(\s*)\}/m,
-          `$1,\n$3  ${settingsKey}: ${settingsKey} ?? settings.${settingsKey},$2\n$3}`
+          /(settings = await prisma\.layoutSettings\.update\(\{[\s\S]*?data:\s*\{[\s\S]*?),(\s*\n\s*)\},/m,
+          `$1,\n          ${settingsKey}: ${settingsKey} ?? settings.${settingsKey}$2},`
         );
         
         fs.writeFileSync(apiRoutePath, apiContent);
@@ -358,15 +358,17 @@ export default function ${pageFunctionName}() {
         console.log(`${colors.yellow}⚠️  Field ${settingsKey} already exists in SideNav, skipping SideNav update${colors.reset}`);
       } else {
         // Update default state - find the useState initialization and add before closing brace
+        // Remove any trailing comma before adding new field
         sideNavContent = sideNavContent.replace(
-          /(const \[layoutSettings, setLayoutSettings\] = useState<LayoutSettings>\(\{[\s\S]*?)(,?\s*\n)(\s*)\}\);/m,
-          `$1,\n$3  ${settingsKey}: true,$2$3});`
+          /(const \[layoutSettings, setLayoutSettings\] = useState<LayoutSettings>\(\{[\s\S]*?),(\s*\n\s*)\}\);/m,
+          `$1,\n    ${settingsKey}: true$2});`
         );
         
         // Update fetchLayoutSettings - add to settings object before closing brace
+        // Remove any trailing comma before adding new field
         sideNavContent = sideNavContent.replace(
-          /(const settings: LayoutSettings = \{[\s\S]*?)(,?\s*\n)(\s*)\};/m,
-          `$1,\n$3  ${settingsKey}: data.${settingsKey},$2$3};`
+          /(const settings: LayoutSettings = \{[\s\S]*?),(\s*\n\s*)\};/m,
+          `$1,\n        ${settingsKey}: data.${settingsKey}$2};`
         );
         
         fs.writeFileSync(sideNavPath, sideNavContent);
@@ -384,15 +386,17 @@ export default function ${pageFunctionName}() {
         console.log(`${colors.yellow}⚠️  Field ${settingsKey} already exists in LayoutSettingsTab, skipping LayoutSettingsTab update${colors.reset}`);
       } else {
         // Update initial state - add before closing brace
+        // Remove any trailing comma before adding new field
         settingsTabContent = settingsTabContent.replace(
-          /(const \[settings, setSettings\] = useState<LayoutSettings>\(\{[\s\S]*?)(,?\s*\n)(\s*)\}\);/m,
-          `$1,\n$3  ${settingsKey}: true,$2$3});`
+          /(const \[settings, setSettings\] = useState<LayoutSettings>\(\{[\s\S]*?),(\s*\n\s*)\}\);/m,
+          `$1,\n    ${settingsKey}: true$2});`
         );
         
         // Update fetchSettings - add to setSettings object before closing brace
+        // Remove any trailing comma before adding new field
         settingsTabContent = settingsTabContent.replace(
-          /(setSettings\(\{[\s\S]*?)(,?\s*\n)(\s*)\}\);/m,
-          `$1,\n$3  ${settingsKey}: data.${settingsKey},$2$3});`
+          /(setSettings\(\{[\s\S]*?),(\s*\n\s*)\}\);/m,
+          `$1,\n          ${settingsKey}: data.${settingsKey}$2});`
         );
         
         fs.writeFileSync(settingsTabPath, settingsTabContent);
