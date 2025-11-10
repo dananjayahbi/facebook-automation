@@ -239,6 +239,7 @@ export default function ${pageFunctionName}() {
     console.log(`${colors.green}✓ Updated layoutNavigation.ts${colors.reset}`);
     
     let migrationName = ''; // Declare outside if block for use in summary
+    let schemaUpdated = false; // Track if schema was actually modified
     
     if (!isLocked) {
       // Step 5: Update Prisma schema
@@ -247,12 +248,15 @@ export default function ${pageFunctionName}() {
       const schemaPath = path.join(projectRoot, 'prisma', 'schema.prisma');
       let schemaContent = fs.readFileSync(schemaPath, 'utf8');
       
-      // Add field to LayoutSettings model
-      const modelRegex = /model LayoutSettings \{([^}]+)\}/;
-      const modelMatch = schemaContent.match(modelRegex);
-      if (modelMatch) {
-        const modelContent = modelMatch[1];
-        if (!modelContent.includes(settingsKey)) {
+      // Check if field already exists
+      if (schemaContent.includes(settingsKey)) {
+        console.log(`${colors.yellow}⚠️  Field ${settingsKey} already exists in schema, skipping schema update${colors.reset}`);
+      } else {
+        // Add field to LayoutSettings model
+        const modelRegex = /model LayoutSettings \{([^}]+)\}/;
+        const modelMatch = schemaContent.match(modelRegex);
+        if (modelMatch) {
+          const modelContent = modelMatch[1];
           // Find the last Boolean field line and add new field after it
           const lines = modelContent.split('\n');
           const lastBooleanIndex = lines.findIndex((line, idx) => 
@@ -264,34 +268,45 @@ export default function ${pageFunctionName}() {
             lines.splice(lastBooleanIndex + 1, 0, `  ${settingsKey.padEnd(22)} Boolean  @default(true)`);
             const newModelContent = lines.join('\n');
             schemaContent = schemaContent.replace(modelRegex, `model LayoutSettings {${newModelContent}}`);
+            schemaUpdated = true;
           }
+        }
+        
+        if (schemaUpdated) {
+          fs.writeFileSync(schemaPath, schemaContent);
+          console.log(`${colors.green}✓ Updated schema.prisma${colors.reset}`);
         }
       }
       
-      fs.writeFileSync(schemaPath, schemaContent);
-      console.log(`${colors.green}✓ Updated schema.prisma${colors.reset}`);
-      
-      // Step 6: Run Prisma migration
-      console.log(`\n${colors.blue}🔄 Step 6: Running Prisma Migration${colors.reset}`);
-      
-      migrationName = `add_${settingsKey.toLowerCase()}_field`;
-      try {
-        execSync(`npx prisma migrate dev --name ${migrationName}`, {
-          cwd: projectRoot,
-          stdio: 'inherit'
-        });
-        console.log(`${colors.green}✓ Migration completed${colors.reset}`);
+      // Step 6: Run Prisma migration (only if schema was updated)
+      if (schemaUpdated) {
+        console.log(`\n${colors.blue}🔄 Step 6: Running Prisma Migration${colors.reset}`);
         
-        // Run Prisma generate to update client
-        console.log(`\n${colors.blue}🔧 Step 6b: Regenerating Prisma Client${colors.reset}`);
-        execSync(`npx prisma generate`, {
-          cwd: projectRoot,
-          stdio: 'inherit'
-        });
-        console.log(`${colors.green}✓ Prisma Client regenerated${colors.reset}`);
-      } catch (error) {
-        console.error(`${colors.red}✗ Migration or Prisma generate failed${colors.reset}`);
-        throw error;
+        migrationName = `add_${settingsKey.toLowerCase()}_field`;
+        try {
+          execSync(`npx prisma migrate dev --name ${migrationName}`, {
+            cwd: projectRoot,
+            stdio: 'inherit'
+          });
+          console.log(`${colors.green}✓ Migration completed${colors.reset}`);
+          
+          // Run Prisma generate to update client
+          console.log(`\n${colors.blue}🔧 Step 6b: Regenerating Prisma Client${colors.reset}`);
+          execSync(`npx prisma generate`, {
+            cwd: projectRoot,
+            stdio: 'inherit'
+          });
+          console.log(`${colors.green}✓ Prisma Client regenerated${colors.reset}`);
+        } catch (error) {
+          console.error(`\n${colors.red}✗ Migration or Prisma generate failed${colors.reset}`);
+          console.error(`${colors.yellow}If you see P3015 error (migration file not found):${colors.reset}`);
+          console.error(`  1. Find the corrupted migration: find prisma/migrations -name "*${migrationName}*"`);
+          console.error(`  2. Delete it: rm -rf prisma/migrations/[migration-folder]`);
+          console.error(`  3. Run the script again`);
+          throw error;
+        }
+      } else {
+        console.log(`${colors.yellow}ℹ️  Skipping migration (schema not modified)${colors.reset}`);
       }
       
       // Step 7: Update API route
@@ -393,8 +408,14 @@ ${colors.reset}`);
       console.log(`  ✓ src/app/api/settings/layout-settings/route.ts`);
       console.log(`  ✓ src/components/layout/SideNav.tsx`);
       console.log(`  ✓ src/app/settings/components/LayoutSettingsTab.tsx`);
-      console.log(`\n${colors.cyan}💾 Database:${colors.reset}`);
-      console.log(`  ✓ Migration applied: ${migrationName}`);
+      if (schemaUpdated && migrationName) {
+        console.log(`\n${colors.cyan}💾 Database:${colors.reset}`);
+        console.log(`  ✓ Migration applied: ${migrationName}`);
+        console.log(`  ✓ Prisma Client regenerated`);
+      } else if (!schemaUpdated) {
+        console.log(`\n${colors.cyan}💾 Database:${colors.reset}`);
+        console.log(`  ℹ️  No migration needed (field already exists)`);
+      }
     }
     
     console.log(`\n${colors.cyan}🎯 Next Steps:${colors.reset}`);
