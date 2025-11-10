@@ -3,16 +3,13 @@
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { Eye, EyeOff, Lock } from "lucide-react";
-
-interface LayoutSettings {
-  showGenerateContent: boolean;
-  showViewContent: boolean;
-}
+import { layoutNavigationItems, type LayoutSettings } from "@/lib/constants";
 
 export default function LayoutSettingsTab() {
   const [settings, setSettings] = useState<LayoutSettings>({
     showGenerateContent: true,
     showViewContent: true,
+    showUploadContent: true,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -30,6 +27,7 @@ export default function LayoutSettingsTab() {
         setSettings({
           showGenerateContent: data.showGenerateContent,
           showViewContent: data.showViewContent,
+          showUploadContent: data.showUploadContent,
         });
       }
     } catch (error) {
@@ -87,45 +85,6 @@ export default function LayoutSettingsTab() {
     );
   }
 
-  const navItems = [
-    {
-      id: "dashboard" as const,
-      label: "Dashboard",
-      description: "Main dashboard page",
-      locked: true,
-    },
-    {
-      id: "userManagement" as const,
-      label: "User Management",
-      description: "Manage users and permissions",
-      locked: true,
-    },
-    {
-      id: "showGenerateContent" as keyof LayoutSettings,
-      label: "Generate Content",
-      description: "Create quotes and backgrounds",
-      locked: false,
-    },
-    {
-      id: "showViewContent" as keyof LayoutSettings,
-      label: "View Content",
-      description: "Browse saved quotes and backgrounds",
-      locked: false,
-    },
-    {
-      id: "settings" as const,
-      label: "Settings",
-      description: "Application settings",
-      locked: true,
-    },
-    {
-      id: "profile" as const,
-      label: "Profile",
-      description: "User profile settings",
-      locked: true,
-    },
-  ];
-
   return (
     <div className="space-y-6">
       <div>
@@ -151,8 +110,8 @@ export default function LayoutSettingsTab() {
 
       <div className="bg-white rounded-lg border border-gray-200">
         <div className="divide-y divide-gray-200">
-          {navItems.map((item) => {
-            const isVisible = item.locked || settings[item.id as keyof LayoutSettings];
+          {layoutNavigationItems.map((item) => {
+            const isVisible = item.locked || (item.settingsKey && settings[item.settingsKey]);
             const isToggleable = !item.locked;
 
             return (
@@ -181,8 +140,8 @@ export default function LayoutSettingsTab() {
                     </span>
                   ) : (
                     <button
-                      onClick={() => handleToggle(item.id as keyof LayoutSettings)}
-                      disabled={saving}
+                      onClick={() => item.settingsKey && handleToggle(item.settingsKey)}
+                      disabled={saving || !item.settingsKey}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                         isVisible ? "bg-[#5B50E8]" : "bg-gray-200"
                       } ${saving ? "opacity-50 cursor-not-allowed" : ""}`}

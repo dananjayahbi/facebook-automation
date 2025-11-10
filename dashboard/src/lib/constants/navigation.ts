@@ -1,4 +1,4 @@
-import { Users, Blinds, ScanEye, Settings } from "lucide-react";
+import { Users, Blinds, ScanEye, Settings, FileUp } from "lucide-react";
 
 /**
  * Navigation Configuration
@@ -50,5 +50,10 @@ export const navigationItems: NavItem[] = [
     name: "Settings",
     href: "/settings",
     icon: Settings,
+  },
+  {
+    name: "Upload Content",
+    href: "/upload-content",
+    icon: FileUp,
   },
 ];
