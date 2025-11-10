@@ -1,13 +1,17 @@
 "use client";
 
 import { Select } from '@/components/ui';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Image as ImageIcon, Sparkles, Save, Check } from 'lucide-react';
 
-const IMAGE_MODELS = [
-  { value: "gemini-2.0-flash-preview-image-generation", label: "Gemini 2.0 Flash Preview Image Generation" },
-];
+interface ImageModel {
+  id: string;
+  name: string;
+  modelId: string;
+  isDefault: boolean;
+  isActive: boolean;
+}
 
 const ASPECT_RATIOS = [
   { value: "1:1", label: "1:1 (Square)" },
@@ -17,13 +21,58 @@ const ASPECT_RATIOS = [
 ];
 
 export function BackgroundGenerator() {
-  const [selectedModel, setSelectedModel] = useState("gemini-2.0-flash-preview-image-generation");
+  const [imageModels, setImageModels] = useState<ImageModel[]>([]);
+  const [selectedModel, setSelectedModel] = useState("");
   const [selectedAspectRatio, setSelectedAspectRatio] = useState("3:4");
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    fetchImageModels();
+    fetchImageSettings();
+  }, []);
+
+  const fetchImageModels = async () => {
+    try {
+      const response = await fetch('/api/settings/image-models');
+      const data = await response.json();
+      
+      if (data.models && data.models.length > 0) {
+        setImageModels(data.models);
+        
+        // Set default model
+        const defaultModel = data.models.find((m: ImageModel) => m.isDefault && m.isActive);
+        if (defaultModel) {
+          setSelectedModel(defaultModel.modelId);
+        } else {
+          // If no default, use first active model
+          const firstActive = data.models.find((m: ImageModel) => m.isActive);
+          if (firstActive) {
+            setSelectedModel(firstActive.modelId);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching image models:', error);
+      toast.error('Failed to load image models');
+    }
+  };
+
+  const fetchImageSettings = async () => {
+    try {
+      const response = await fetch('/api/settings/image-settings');
+      const data = await response.json();
+      
+      if (data.settings && data.settings.defaultAspectRatio) {
+        setSelectedAspectRatio(data.settings.defaultAspectRatio);
+      }
+    } catch (error) {
+      console.error('Error fetching image settings:', error);
+    }
+  };
 
   const handleGenerateImage = async () => {
     if (!prompt.trim()) {
@@ -111,7 +160,10 @@ export function BackgroundGenerator() {
               Select Model
             </label>
             <Select
-              options={IMAGE_MODELS}
+              options={imageModels.filter(m => m.isActive).map(m => ({
+                value: m.modelId,
+                label: m.name
+              }))}
               value={selectedModel}
               onChange={(value) => setSelectedModel(value)}
               disabled={isGenerating}

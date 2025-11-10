@@ -1,17 +1,17 @@
 "use client";
 
 import { Select } from '@/components/ui';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Sparkles, Copy, Check, Save } from 'lucide-react';
 
-const GEMINI_MODELS = [
-  { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
-  { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
-  { value: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite" },
-  { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
-  { value: "gemini-2.0-flash-lite", label: "Gemini 2.0 Flash Lite" },
-];
+interface TextModel {
+  id: string;
+  name: string;
+  modelId: string;
+  isDefault: boolean;
+  isActive: boolean;
+}
 
 const TONE_OPTIONS = [
   { value: "motivational", label: "Motivational" },
@@ -28,7 +28,8 @@ const LENGTH_OPTIONS = [
 ];
 
 export function QuotesGenerator() {
-  const [selectedModel, setSelectedModel] = useState("gemini-2.5-flash");
+  const [textModels, setTextModels] = useState<TextModel[]>([]);
+  const [selectedModel, setSelectedModel] = useState("");
   const [selectedTone, setSelectedTone] = useState("motivational");
   const [selectedLength, setSelectedLength] = useState("medium");
   const [niche, setNiche] = useState("");
@@ -38,6 +39,36 @@ export function QuotesGenerator() {
   const [copied, setCopied] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    fetchTextModels();
+  }, []);
+
+  const fetchTextModels = async () => {
+    try {
+      const response = await fetch('/api/settings/text-models');
+      const data = await response.json();
+      
+      if (data.models && data.models.length > 0) {
+        setTextModels(data.models);
+        
+        // Set default model
+        const defaultModel = data.models.find((m: TextModel) => m.isDefault && m.isActive);
+        if (defaultModel) {
+          setSelectedModel(defaultModel.modelId);
+        } else {
+          // If no default, use first active model
+          const firstActive = data.models.find((m: TextModel) => m.isActive);
+          if (firstActive) {
+            setSelectedModel(firstActive.modelId);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching text models:', error);
+      toast.error('Failed to load text models');
+    }
+  };
 
   const handleGenerateQuote = async () => {
     setIsGenerating(true);
@@ -141,7 +172,10 @@ export function QuotesGenerator() {
               Select Model
             </label>
             <Select
-              options={GEMINI_MODELS}
+              options={textModels.filter(m => m.isActive).map(m => ({
+                value: m.modelId,
+                label: m.name
+              }))}
               value={selectedModel}
               onChange={(value) => setSelectedModel(value)}
               disabled={isGenerating}

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { GoogleGenAI, Modality, Part } from "@google/genai";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: Request) {
   try {
@@ -14,11 +15,38 @@ export async function POST(request: Request) {
       );
     }
 
-    const { model, prompt, aspectRatio = "3:4" } = await request.json();
+    let { model, prompt, aspectRatio } = await request.json();
 
-    if (!model || !prompt) {
+    // If no model specified, get default from database
+    if (!model) {
+      const defaultModel = await prisma.imageModel.findFirst({
+        where: { isDefault: true, isActive: true }
+      });
+      
+      if (defaultModel) {
+        model = defaultModel.modelId;
+      } else {
+        return NextResponse.json(
+          { message: "No model specified and no default model configured" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // If no aspect ratio specified, get default from database
+    if (!aspectRatio) {
+      let settings = await prisma.imageSettings.findFirst();
+      if (!settings) {
+        settings = await prisma.imageSettings.create({
+          data: { defaultAspectRatio: "3:4" }
+        });
+      }
+      aspectRatio = settings.defaultAspectRatio;
+    }
+
+    if (!prompt) {
       return NextResponse.json(
-        { message: "Model and prompt are required" },
+        { message: "Prompt is required" },
         { status: 400 }
       );
     }
@@ -72,3 +100,4 @@ export async function POST(request: Request) {
     );
   }
 }
+

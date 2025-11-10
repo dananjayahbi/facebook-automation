@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: Request) {
   try {
@@ -13,13 +14,22 @@ export async function POST(request: Request) {
       );
     }
 
-    const { model, tone, length, niche, context } = await request.json();
+    let { model, tone, length, niche, context } = await request.json();
 
+    // If no model specified, get default from database
     if (!model) {
-      return NextResponse.json(
-        { message: "Model is required" },
-        { status: 400 }
-      );
+      const defaultModel = await prisma.textModel.findFirst({
+        where: { isDefault: true, isActive: true }
+      });
+      
+      if (defaultModel) {
+        model = defaultModel.modelId;
+      } else {
+        return NextResponse.json(
+          { message: "No model specified and no default model configured" },
+          { status: 400 }
+        );
+      }
     }
 
     // Import GoogleGenAI
