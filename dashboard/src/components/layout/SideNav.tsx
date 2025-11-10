@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { LayoutDashboard, User } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { navigationItems } from "@/lib/constants";
+import { useState, useEffect } from "react";
 
 /**
  * SideNav Component
@@ -20,6 +21,70 @@ import { navigationItems } from "@/lib/constants";
 export default function SideNav() {
   const pathname = usePathname();
   const { data: session } = useSession();
+  
+  // Initialize from localStorage for instant load
+  const [layoutSettings, setLayoutSettings] = useState(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("layoutSettings");
+      if (stored) {
+        try {
+          return JSON.parse(stored);
+        } catch {
+          return { showGenerateContent: true, showViewContent: true };
+        }
+      }
+    }
+    return { showGenerateContent: true, showViewContent: true };
+  });
+
+  const fetchLayoutSettings = async () => {
+    try {
+      const res = await fetch("/api/settings/layout-settings");
+      const data = await res.json();
+      const settings = {
+        showGenerateContent: data.showGenerateContent,
+        showViewContent: data.showViewContent,
+      };
+      
+      setLayoutSettings(settings);
+      
+      // Update localStorage
+      if (typeof window !== "undefined") {
+        localStorage.setItem("layoutSettings", JSON.stringify(settings));
+      }
+    } catch (err) {
+      console.error("Error fetching layout settings:", err);
+    }
+  };
+
+  useEffect(() => {
+    // Fetch layout settings on mount to sync with database
+    fetchLayoutSettings();
+
+    // Listen for layout settings updates
+    const handleLayoutUpdate = () => {
+      fetchLayoutSettings();
+    };
+
+    window.addEventListener("layoutSettingsUpdated", handleLayoutUpdate);
+
+    return () => {
+      window.removeEventListener("layoutSettingsUpdated", handleLayoutUpdate);
+    };
+  }, []);
+
+  // Sync localStorage when user logs in
+  useEffect(() => {
+    if (session) {
+      // User is logged in - fetch their settings from database and update localStorage
+      fetchLayoutSettings();
+    } else {
+      // User logged out - clear layout settings from localStorage
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("layoutSettings");
+      }
+    }
+  }, [session]);
 
   const isActive = (href: string) => {
     return pathname === href;
@@ -27,12 +92,21 @@ export default function SideNav() {
 
   const isDashboardActive = pathname === '/dashboard';
 
-  // Filter navigation items based on user role
+  // Filter navigation items based on user role and layout settings
   const filteredNavItems = navigationItems.filter((item) => {
     // Hide User Management for non-superadmin users
     if (item.href === "/user-management" && session?.user?.role !== "SUPERADMIN") {
       return false;
     }
+
+    // Apply layout settings visibility
+    if (item.href === "/generate-content" && !layoutSettings.showGenerateContent) {
+      return false;
+    }
+    if (item.href === "/view-content" && !layoutSettings.showViewContent) {
+      return false;
+    }
+
     return true;
   });
 

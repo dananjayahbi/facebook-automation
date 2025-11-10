@@ -9,6 +9,7 @@ const tabs = [
   { id: "text-models", label: "Text Models" },
   { id: "image-models", label: "Image Models" },
   { id: "image-settings", label: "Image Settings" },
+  { id: "layout-settings", label: "Layout Settings" },
   { id: "data-export", label: "Data Export" },
 ];
 

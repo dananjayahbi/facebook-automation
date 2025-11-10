@@ -5,6 +5,7 @@ import { SettingsTabNavigation } from './SettingsTabNavigation';
 import { TextModelsTab } from './TextModelsTab';
 import { ImageModelsTab } from './ImageModelsTab';
 import { ImageSettingsTab } from './ImageSettingsTab';
+import LayoutSettingsTab from './LayoutSettingsTab';
 import { DataExportTab } from './DataExportTab';
 
 export function SettingsContent() {
@@ -18,6 +19,7 @@ export function SettingsContent() {
         {activeTab === 'text-models' && <TextModelsTab />}
         {activeTab === 'image-models' && <ImageModelsTab />}
         {activeTab === 'image-settings' && <ImageSettingsTab />}
+        {activeTab === 'layout-settings' && <LayoutSettingsTab />}
         {activeTab === 'data-export' && <DataExportTab />}
       </div>
     </div>

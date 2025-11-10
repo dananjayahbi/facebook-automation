@@ -75,3 +75,13 @@ model ImageSettings {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
+
+// Model for storing layout/UI settings
+model LayoutSettings {
+  id                    String   @id @default(cuid())
+  // Navigation visibility settings
+  showGenerateContent   Boolean  @default(true)
+  showViewContent       Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
