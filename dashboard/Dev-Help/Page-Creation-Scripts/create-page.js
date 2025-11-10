@@ -278,35 +278,30 @@ export default function ${pageFunctionName}() {
         }
       }
       
-      // Step 6: Run Prisma migration (only if schema was updated)
+      // Step 6: Sync database with Prisma schema (only if schema was updated)
       if (schemaUpdated) {
-        console.log(`\n${colors.blue}🔄 Step 6: Running Prisma Migration${colors.reset}`);
+        console.log(`\n${colors.blue}🔄 Step 6: Syncing Database with Schema${colors.reset}`);
         
-        migrationName = `add_${settingsKey.toLowerCase()}_field`;
         try {
-          execSync(`npx prisma migrate dev --name ${migrationName}`, {
+          // Use db push for development - it's faster and doesn't require migration files
+          execSync(`npx prisma db push --accept-data-loss`, {
             cwd: projectRoot,
             stdio: 'inherit'
           });
-          console.log(`${colors.green}✓ Migration completed${colors.reset}`);
+          console.log(`${colors.green}✓ Database schema synced${colors.reset}`);
           
-          // Run Prisma generate to update client
-          console.log(`\n${colors.blue}🔧 Step 6b: Regenerating Prisma Client${colors.reset}`);
-          execSync(`npx prisma generate`, {
-            cwd: projectRoot,
-            stdio: 'inherit'
-          });
-          console.log(`${colors.green}✓ Prisma Client regenerated${colors.reset}`);
+          console.log(`\n${colors.yellow}ℹ️  Note: Used 'prisma db push' for faster development.${colors.reset}`);
+          console.log(`${colors.yellow}   For production, run 'npx prisma migrate dev' to create proper migrations.${colors.reset}`);
         } catch (error) {
-          console.error(`\n${colors.red}✗ Migration or Prisma generate failed${colors.reset}`);
-          console.error(`${colors.yellow}If you see P3015 error (migration file not found):${colors.reset}`);
-          console.error(`  1. Find the corrupted migration: find prisma/migrations -name "*${migrationName}*"`);
-          console.error(`  2. Delete it: rm -rf prisma/migrations/[migration-folder]`);
-          console.error(`  3. Run the script again`);
+          console.error(`\n${colors.red}✗ Database sync failed${colors.reset}`);
+          console.error(`${colors.yellow}Troubleshooting:${colors.reset}`);
+          console.error(`  1. Check database connection in .env.local`);
+          console.error(`  2. Ensure DATABASE_URL is correct`);
+          console.error(`  3. Try running: npx prisma db push manually`);
           throw error;
         }
       } else {
-        console.log(`${colors.yellow}ℹ️  Skipping migration (schema not modified)${colors.reset}`);
+        console.log(`${colors.yellow}ℹ️  Skipping database sync (schema not modified)${colors.reset}`);
       }
       
       // Step 7: Update API route
@@ -408,13 +403,13 @@ ${colors.reset}`);
       console.log(`  ✓ src/app/api/settings/layout-settings/route.ts`);
       console.log(`  ✓ src/components/layout/SideNav.tsx`);
       console.log(`  ✓ src/app/settings/components/LayoutSettingsTab.tsx`);
-      if (schemaUpdated && migrationName) {
+      if (schemaUpdated) {
         console.log(`\n${colors.cyan}💾 Database:${colors.reset}`);
-        console.log(`  ✓ Migration applied: ${migrationName}`);
-        console.log(`  ✓ Prisma Client regenerated`);
+        console.log(`  ✓ Schema synced with db push`);
+        console.log(`  ℹ️  No migration files created (using db push for development)`);
       } else if (!schemaUpdated) {
         console.log(`\n${colors.cyan}💾 Database:${colors.reset}`);
-        console.log(`  ℹ️  No migration needed (field already exists)`);
+        console.log(`  ℹ️  No changes needed (field already exists)`);
       }
     }
     
