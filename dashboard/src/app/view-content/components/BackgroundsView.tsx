@@ -66,9 +66,14 @@ export function BackgroundsView() {
   };
 
   const getImageUrl = (imageUrl: string) => {
-    const parts = imageUrl.replace('src/', '');
-    const url = `/${parts}`;
-    return url;
+    // imageUrl format: src/assets/gen-images/{pageId}/{filename}.jpg
+    // Extract pageId and filename
+    const parts = imageUrl.split('/');
+    const filename = parts[parts.length - 1]; // Get the last part (filename)
+    const pageId = parts[parts.length - 2]; // Get the second-to-last part (pageId)
+    
+    // Construct API URL with pageId parameter
+    return `/api/images/${filename}?pageId=${pageId}`;
   };
 
   const handleDownload = (imageUrl: string) => {

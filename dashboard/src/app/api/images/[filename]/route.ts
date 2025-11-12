@@ -16,13 +16,26 @@ export async function GET(
     }
 
     const { filename } = await params;
+    const { searchParams } = new URL(request.url);
+    const pageId = searchParams.get("pageId");
     
     // Security: validate filename to prevent directory traversal
-    if (!filename || filename.includes("..") || filename.includes("/") || filename.includes("\\")) {
+    if (!filename || filename.includes("..")) {
       return NextResponse.json({ message: "Invalid filename" }, { status: 400 });
     }
 
-    const imagePath = path.join(process.cwd(), "src", "assets", "gen-images", filename);
+    // Construct the image path based on whether pageId is provided
+    let imagePath: string;
+    if (pageId) {
+      // Validate pageId to prevent directory traversal
+      if (pageId.includes("..") || pageId.includes("/") || pageId.includes("\\")) {
+        return NextResponse.json({ message: "Invalid page ID" }, { status: 400 });
+      }
+      imagePath = path.join(process.cwd(), "src", "assets", "gen-images", pageId, filename);
+    } else {
+      // Legacy support for flat structure
+      imagePath = path.join(process.cwd(), "src", "assets", "gen-images", filename);
+    }
 
     if (!fs.existsSync(imagePath)) {
       return NextResponse.json({ message: "Image not found" }, { status: 404 });

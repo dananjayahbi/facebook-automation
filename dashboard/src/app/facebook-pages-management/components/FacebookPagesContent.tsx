@@ -158,9 +158,6 @@ export function FacebookPagesContent() {
       <div className="space-y-6">
         {/* Header with Add Button */}
         <div className="flex justify-between items-center">
-          <p className="text-gray-600">
-            Manage Facebook pages for content generation and distribution
-          </p>
           <button
             onClick={handleAddPage}
             className="px-4 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors"
