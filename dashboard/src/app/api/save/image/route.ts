@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
@@ -16,11 +17,37 @@ export async function POST(request: Request) {
       );
     }
 
-    const { imageData, prompt, model, aspectRatio } = await request.json();
+    const { imageData, prompt, model, aspectRatio, facebookPageId } = await request.json();
 
     if (!imageData || !prompt) {
       return NextResponse.json(
         { message: "Image data and prompt are required" },
+        { status: 400 }
+      );
+    }
+
+    if (!facebookPageId) {
+      return NextResponse.json(
+        { message: "Facebook Page ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // Verify that the Facebook page exists and is active
+    const facebookPage = await prisma.facebookPage.findUnique({
+      where: { id: facebookPageId },
+    });
+
+    if (!facebookPage) {
+      return NextResponse.json(
+        { message: "Facebook page not found" },
+        { status: 404 }
+      );
+    }
+
+    if (!facebookPage.isActive) {
+      return NextResponse.json(
+        { message: "Facebook page is not active" },
         { status: 400 }
       );
     }
@@ -41,37 +68,26 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(base64Data, "base64");
     fs.writeFileSync(imagePath, buffer);
 
-    // Save metadata to CSV
-    const csvPath = path.join(process.cwd(), "src", "assets", "sheets", "generated-images.csv");
-    
-    // Create CSV file with headers if it doesn't exist
-    if (!fs.existsSync(csvPath)) {
-      fs.writeFileSync(csvPath, "Timestamp,ImagePath,Prompt,Model,AspectRatio\n");
-    }
-
-    const timestamp = new Date().toISOString();
-    const escapeCSV = (value: string | undefined) => {
-      if (!value) return "";
-      const cleanedValue = value.replace(/[\r\n]+/g, ' ').trim();
-      return `"${cleanedValue.replace(/"/g, '""')}"`;
-    };
-
     const relativePath = `src/assets/gen-images/${filename}`;
-    const csvRow = [
-      escapeCSV(timestamp),
-      escapeCSV(relativePath),
-      escapeCSV(prompt),
-      escapeCSV(model || ""),
-      escapeCSV(aspectRatio || "")
-    ].join(",") + "\n";
 
-    fs.appendFileSync(csvPath, csvRow);
+    // Save background to database
+    const savedBackground = await prisma.background.create({
+      data: {
+        prompt,
+        imageUrl: relativePath,
+        generatedBy: model || null,
+        aspectRatio: aspectRatio || null,
+        facebookPageId,
+        createdById: session.user.id,
+      },
+    });
 
     return NextResponse.json(
       { 
         message: "Image saved successfully",
         imagePath: relativePath,
-        imageId
+        imageId,
+        background: savedBackground
       },
       { status: 200 }
     );

@@ -33,6 +33,74 @@ model User {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  // Relations
+  quotes      Quote[]
+  backgrounds Background[]
+  activePage  UserActivePage?
+}
+
+model FacebookPage {
+  id          String   @id @default(cuid())
+  name        String   // Facebook page name
+  description String?  // Optional description
+  pageId      String?  // Optional Facebook Page ID for API integration
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  quotes       Quote[]
+  backgrounds  Background[]
+  activeUsers  UserActivePage[]
+  
+  @@index([isActive])
+}
+
+model Quote {
+  id            String       @id @default(cuid())
+  text          String
+  author        String?
+  category      String?
+  generatedBy   String?      // Model used for generation
+  
+  // Facebook Page relation
+  facebookPageId String
+  facebookPage   FacebookPage @relation(fields: [facebookPageId], references: [id], onDelete: Cascade)
+  
+  // User relation (who created it)
+  createdById   String
+  createdBy     User          @relation(fields: [createdById], references: [id])
+  
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  
+  @@index([facebookPageId])
+  @@index([createdById])
+  @@index([createdAt])
+}
+
+model Background {
+  id            String       @id @default(cuid())
+  prompt        String
+  imageUrl      String?      // Stored image path/URL
+  generatedBy   String?      // Model used for generation
+  aspectRatio   String?      // e.g., "3:4", "16:9"
+  
+  // Facebook Page relation
+  facebookPageId String
+  facebookPage   FacebookPage @relation(fields: [facebookPageId], references: [id], onDelete: Cascade)
+  
+  // User relation (who created it)
+  createdById   String
+  createdBy     User          @relation(fields: [createdById], references: [id])
+  
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  
+  @@index([facebookPageId])
+  @@index([createdById])
+  @@index([createdAt])
 }
 
 model RegistrationRequest {
@@ -80,8 +148,23 @@ model ImageSettings {
 model LayoutSettings {
   id                    String   @id @default(cuid())
   // Navigation visibility settings
-  showGenerateContent   Boolean  @default(true)  showTest3             Boolean  @default(true)  showViewContent       Boolean  @default(true)
+  showGenerateContent   Boolean  @default(true)
+  showViewContent       Boolean  @default(true)
   showUploadContent     Boolean  @default(true)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
+}
+
+// Model for storing user's active Facebook Page selection
+model UserActivePage {
+  id              String       @id @default(cuid())
+  userId          String       @unique
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  facebookPageId  String
+  facebookPage    FacebookPage @relation(fields: [facebookPageId], references: [id], onDelete: Cascade)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  
+  @@index([userId])
+  @@index([facebookPageId])
 }

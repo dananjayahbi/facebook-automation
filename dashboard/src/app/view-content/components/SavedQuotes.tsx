@@ -6,45 +6,41 @@ import { ChevronLeft, ChevronRight, Copy, Eye, Edit2, Trash2 } from 'lucide-reac
 import { ViewQuoteModal } from './ViewQuoteModal';
 import { EditQuoteModal } from './EditQuoteModal';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
+import { useFacebookPage } from '@/contexts/FacebookPageContext';
 
 interface Quote {
-  rowId: number;
-  timestamp: string;
-  quote: string;
-  tone: string;
-  length: string;
-  niche: string;
-  context: string;
-  model: string;
-}
-
-interface QuotesResponse {
-  quotes: Quote[];
-  totalCount: number;
-  currentPage: number;
-  totalPages: number;
-  hasNextPage: boolean;
-  hasPrevPage: boolean;
+  id: string;
+  text: string;
+  author: string | null;
+  category: string | null;
+  generatedBy: string | null;
+  createdAt: string;
+  createdBy: {
+    name: string | null;
+    email: string;
+  };
 }
 
 export function SavedQuotes() {
+  const { activePage } = useFacebookPage();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
-  const [hasNextPage, setHasNextPage] = useState(false);
-  const [hasPrevPage, setHasPrevPage] = useState(false);
   
   // Modal states
   const [viewModalQuote, setViewModalQuote] = useState<Quote | null>(null);
   const [editModalQuote, setEditModalQuote] = useState<Quote | null>(null);
   const [deleteModalQuote, setDeleteModalQuote] = useState<Quote | null>(null);
 
-  const fetchQuotes = async (page: number) => {
+  const fetchQuotes = async () => {
+    if (!activePage) {
+      setQuotes([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
-      const response = await fetch(`/api/quotes/list?page=${page}&limit=10`);
+      const response = await fetch(`/api/quotes?facebookPageId=${activePage.id}`);
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -52,13 +48,8 @@ export function SavedQuotes() {
         return;
       }
 
-      const data: QuotesResponse = await response.json();
-      setQuotes(data.quotes);
-      setCurrentPage(data.currentPage);
-      setTotalPages(data.totalPages);
-      setTotalCount(data.totalCount);
-      setHasNextPage(data.hasNextPage);
-      setHasPrevPage(data.hasPrevPage);
+      const data: Quote[] = await response.json();
+      setQuotes(data);
     } catch (error) {
       console.error('Error fetching quotes:', error);
       toast.error('An error occurred while loading quotes');
@@ -68,28 +59,16 @@ export function SavedQuotes() {
   };
 
   useEffect(() => {
-    fetchQuotes(currentPage);
-  }, [currentPage]);
+    fetchQuotes();
+  }, [activePage]);
 
-  const handlePrevPage = () => {
-    if (hasPrevPage) {
-      setCurrentPage(prev => prev - 1);
-    }
-  };
-
-  const handleNextPage = () => {
-    if (hasNextPage) {
-      setCurrentPage(prev => prev + 1);
-    }
-  };
-
-  const handleCopyQuote = (quote: string) => {
-    navigator.clipboard.writeText(quote);
+  const handleCopyQuote = (quoteText: string) => {
+    navigator.clipboard.writeText(quoteText);
     toast.success('Quote copied to clipboard!');
   };
 
   const handleRefresh = () => {
-    fetchQuotes(currentPage);
+    fetchQuotes();
   };
 
   if (loading) {
@@ -103,11 +82,21 @@ export function SavedQuotes() {
     );
   }
 
+  if (!activePage) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12">
+        <div className="text-center">
+          <p className="text-gray-600">Please select a Facebook page to view quotes.</p>
+        </div>
+      </div>
+    );
+  }
+
   if (quotes.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12">
         <div className="text-center">
-          <p className="text-gray-600">No saved quotes found. Generate and save some quotes to see them here!</p>
+          <p className="text-gray-600">No saved quotes found for {activePage.name}. Generate and save some quotes to see them here!</p>
         </div>
       </div>
     );
@@ -116,19 +105,32 @@ export function SavedQuotes() {
   return (
     <>
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Quotes for {activePage.name}
+            </h3>
+            <span className="text-sm text-gray-500">{quotes.length} total</span>
+          </div>
+        </div>
+
         {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Row ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Quote
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tone
+                  Category
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Created By
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -137,16 +139,13 @@ export function SavedQuotes() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {quotes.map((quote) => (
-                <tr key={quote.rowId} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                    #{quote.rowId}
-                  </td>
+                <tr key={quote.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 text-sm text-gray-900">
                     <div className="flex items-start gap-2 max-w-2xl">
-                      <span className="flex-1">{quote.quote}</span>
+                      <span className="flex-1">{quote.text}</span>
                       <button
-                        onClick={() => handleCopyQuote(quote.quote)}
-                        className="flex-shrink-0 p-1 text-gray-400 hover:text-[#5B50E8] transition-colors"
+                        onClick={() => handleCopyQuote(quote.text)}
+                        className="shrink-0 p-1 text-gray-400 hover:text-[#5B50E8] transition-colors"
                         title="Copy quote"
                       >
                         <Copy className="w-4 h-4" />

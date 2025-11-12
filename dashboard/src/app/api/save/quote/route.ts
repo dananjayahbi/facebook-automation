@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import fs from "fs";
-import path from "path";
+import prisma from "@/lib/prisma";
 
 export async function POST(request: Request) {
   try {
@@ -15,53 +14,58 @@ export async function POST(request: Request) {
       );
     }
 
-    const { quote, tone, length, niche, context, model } = await request.json();
+    const { quote, author, category, facebookPageId, model } = await request.json();
 
     if (!quote) {
       return NextResponse.json(
-        { message: "Quote is required" },
+        { message: "Quote text is required" },
         { status: 400 }
       );
     }
 
-    // Path to CSV file
-    const csvPath = path.join(process.cwd(), "src", "assets", "sheets", "generated-quotes.csv");
-
-    // Ensure directory exists
-    const dirPath = path.dirname(csvPath);
-    if (!fs.existsSync(dirPath)) {
-      fs.mkdirSync(dirPath, { recursive: true });
+    if (!facebookPageId) {
+      return NextResponse.json(
+        { message: "Facebook Page ID is required" },
+        { status: 400 }
+      );
     }
 
-    // Create CSV file with headers if it doesn't exist
-    if (!fs.existsSync(csvPath)) {
-      fs.writeFileSync(csvPath, "Timestamp,Quote,Tone,Length,Niche,Context,Model\n");
+    // Verify that the Facebook page exists and is active
+    const facebookPage = await prisma.facebookPage.findUnique({
+      where: { id: facebookPageId },
+    });
+
+    if (!facebookPage) {
+      return NextResponse.json(
+        { message: "Facebook page not found" },
+        { status: 404 }
+      );
     }
 
-    // Format data for CSV - escape quotes and wrap in quotes
-    const timestamp = new Date().toISOString();
-    const escapeCSV = (value: string | undefined) => {
-      if (!value) return "";
-      // Remove line breaks and trim, then escape double quotes by doubling them and wrap in quotes
-      const cleanedValue = value.replace(/[\r\n]+/g, ' ').trim();
-      return `"${cleanedValue.replace(/"/g, '""')}"`;
-    };
+    if (!facebookPage.isActive) {
+      return NextResponse.json(
+        { message: "Facebook page is not active" },
+        { status: 400 }
+      );
+    }
 
-    const csvRow = [
-      escapeCSV(timestamp),
-      escapeCSV(quote),
-      escapeCSV(tone || ""),
-      escapeCSV(length || ""),
-      escapeCSV(niche || ""),
-      escapeCSV(context || ""),
-      escapeCSV(model || "")
-    ].join(",") + "\n";
-
-    // Append to CSV file
-    fs.appendFileSync(csvPath, csvRow);
+    // Save quote to database
+    const savedQuote = await prisma.quote.create({
+      data: {
+        text: quote,
+        author: author || null,
+        category: category || null,
+        generatedBy: model || null,
+        facebookPageId,
+        createdById: session.user.id,
+      },
+    });
 
     return NextResponse.json(
-      { message: "Quote saved successfully" },
+      { 
+        message: "Quote saved successfully",
+        quote: savedQuote
+      },
       { status: 200 }
     );
   } catch (error) {

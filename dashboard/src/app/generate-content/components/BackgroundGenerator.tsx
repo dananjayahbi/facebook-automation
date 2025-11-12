@@ -4,6 +4,7 @@ import { Select } from '@/components/ui';
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Image as ImageIcon, Sparkles, Save, Check } from 'lucide-react';
+import { useFacebookPage } from '@/contexts/FacebookPageContext';
 
 interface ImageModel {
   id: string;
@@ -21,6 +22,7 @@ const ASPECT_RATIOS = [
 ];
 
 export function BackgroundGenerator() {
+  const { activePage } = useFacebookPage();
   const [imageModels, setImageModels] = useState<ImageModel[]>([]);
   const [selectedModel, setSelectedModel] = useState("");
   const [selectedAspectRatio, setSelectedAspectRatio] = useState("3:4");
@@ -118,6 +120,11 @@ export function BackgroundGenerator() {
       return;
     }
 
+    if (!activePage) {
+      toast.error('No Facebook page selected');
+      return;
+    }
+
     setIsSaving(true);
 
     try {
@@ -129,6 +136,7 @@ export function BackgroundGenerator() {
           prompt: prompt,
           model: selectedModel,
           aspectRatio: selectedAspectRatio,
+          facebookPageId: activePage.id,
         }),
       });
 

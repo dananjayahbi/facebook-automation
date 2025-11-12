@@ -1,4 +1,4 @@
-import { Users, Blinds, ScanEye, Settings, FileUp, TestTube } from "lucide-react";
+import { Users, Blinds, ScanEye, Settings, FileUp, TestTube, Facebook } from "lucide-react";
 
 /**
  * Navigation Configuration
@@ -35,6 +35,11 @@ export const navigationItems: NavItem[] = [
     name: "User",
     href: "/user-management",
     icon: Users,
+  },
+  {
+    name: "Facebook Pages",
+    href: "/facebook-pages-management",
+    icon: Facebook,
   },
   {
     name: "Generate Content",

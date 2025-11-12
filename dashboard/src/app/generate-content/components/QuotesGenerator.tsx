@@ -4,6 +4,7 @@ import { Select } from '@/components/ui';
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Sparkles, Copy, Check, Save } from 'lucide-react';
+import { useFacebookPage } from '@/contexts/FacebookPageContext';
 
 interface TextModel {
   id: string;
@@ -28,6 +29,7 @@ const LENGTH_OPTIONS = [
 ];
 
 export function QuotesGenerator() {
+  const { activePage } = useFacebookPage();
   const [textModels, setTextModels] = useState<TextModel[]>([]);
   const [selectedModel, setSelectedModel] = useState("");
   const [selectedTone, setSelectedTone] = useState("motivational");
@@ -128,6 +130,11 @@ export function QuotesGenerator() {
   };
 
   const handleSaveQuote = async () => {
+    if (!activePage) {
+      toast.error('No Facebook page selected');
+      return;
+    }
+
     setIsSaving(true);
 
     try {
@@ -136,10 +143,9 @@ export function QuotesGenerator() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           quote: generatedQuote,
-          tone: selectedTone,
-          length: selectedLength,
-          niche: niche || undefined,
-          context: customContext || undefined,
+          author: null,
+          category: selectedTone,
+          facebookPageId: activePage.id,
           model: selectedModel,
         }),
       });
@@ -151,7 +157,7 @@ export function QuotesGenerator() {
       }
 
       setSaved(true);
-      toast.success('Quote saved to CSV successfully!');
+      toast.success('Quote saved successfully!');
     } catch (error) {
       console.error('Error saving quote:', error);
       toast.error('An error occurred while saving quote');
