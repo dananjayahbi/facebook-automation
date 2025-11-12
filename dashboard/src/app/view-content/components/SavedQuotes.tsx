@@ -2,10 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { ChevronLeft, ChevronRight, Copy, Eye, Edit2, Trash2 } from 'lucide-react';
-import { ViewQuoteModal } from './ViewQuoteModal';
-import { EditQuoteModal } from './EditQuoteModal';
-import { DeleteConfirmModal } from './DeleteConfirmModal';
+import { Copy } from 'lucide-react';
 import { useFacebookPage } from '@/contexts/FacebookPageContext';
 
 interface Quote {
@@ -132,9 +129,6 @@ export function SavedQuotes() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -154,101 +148,30 @@ export function SavedQuotes() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <span className="px-2 py-1 text-xs font-medium rounded-full bg-[#5B50E8]/10 text-[#5B50E8] capitalize">
-                      {quote.tone || 'N/A'}
+                      {quote.category || 'N/A'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setViewModalQuote(quote)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="View quote"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setEditModalQuote(quote)}
-                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                        title="Edit quote"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setDeleteModalQuote(quote)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Delete quote"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {quote.createdBy?.name || 'Unknown'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {new Date(quote.createdAt).toLocaleDateString()}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-
-        {/* Pagination */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-          <div className="text-sm text-gray-700">
-            Showing <span className="font-medium">{(currentPage - 1) * 10 + 1}</span> to{' '}
-            <span className="font-medium">{Math.min(currentPage * 10, totalCount)}</span> of{' '}
-            <span className="font-medium">{totalCount}</span> quotes
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handlePrevPage}
-              disabled={!hasPrevPage}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Previous
-            </button>
-            
-            <span className="text-sm text-gray-700">
-              Page <span className="font-medium">{currentPage}</span> of{' '}
-              <span className="font-medium">{totalPages}</span>
-            </span>
-            
-            <button
-              onClick={handleNextPage}
-              disabled={!hasNextPage}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition-colors"
-            >
-              Next
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
       </div>
 
-      {/* Modals */}
-      {viewModalQuote && (
+      {/* Modals - Temporarily disabled until updated for new schema */}
+      {/* {viewModalQuote && (
         <ViewQuoteModal
-          quote={viewModalQuote.quote}
-          tone={viewModalQuote.tone}
+          quote={viewModalQuote.text}
+          category={viewModalQuote.category}
           onClose={() => setViewModalQuote(null)}
         />
-      )}
-
-      {editModalQuote && (
-        <EditQuoteModal
-          rowId={editModalQuote.rowId}
-          initialQuote={editModalQuote.quote}
-          onClose={() => setEditModalQuote(null)}
-          onSave={handleRefresh}
-        />
-      )}
-
-      {deleteModalQuote && (
-        <DeleteConfirmModal
-          rowId={deleteModalQuote.rowId}
-          quote={deleteModalQuote.quote}
-          onClose={() => setDeleteModalQuote(null)}
-          onDelete={handleRefresh}
-        />
-      )}
+      )} */}
     </>
   );
 }

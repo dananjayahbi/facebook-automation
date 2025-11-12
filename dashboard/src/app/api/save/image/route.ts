@@ -55,9 +55,18 @@ export async function POST(request: Request) {
     // Create unique filename with UUID
     const imageId = uuidv4();
     const filename = `${imageId}.jpg`;
-    const imagePath = path.join(process.cwd(), "src", "assets", "gen-images", filename);
+    
+    // Create page-specific directory structure
+    const imagePath = path.join(
+      process.cwd(), 
+      "src", 
+      "assets", 
+      "gen-images", 
+      facebookPageId, 
+      filename
+    );
 
-    // Ensure directory exists
+    // Ensure page-specific directory exists
     const dirPath = path.dirname(imagePath);
     if (!fs.existsSync(dirPath)) {
       fs.mkdirSync(dirPath, { recursive: true });
@@ -68,7 +77,7 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(base64Data, "base64");
     fs.writeFileSync(imagePath, buffer);
 
-    const relativePath = `src/assets/gen-images/${filename}`;
+    const relativePath = `src/assets/gen-images/${facebookPageId}/${filename}`;
 
     // Save background to database
     const savedBackground = await prisma.background.create({
