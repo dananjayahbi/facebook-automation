@@ -1,4 +1,4 @@
-import { Users, Blinds, ScanEye, Settings, User, LayoutDashboard, FileUp, TestTube } from "lucide-react";
+import { Users, Blinds, ScanEye, Settings, User, LayoutDashboard, FileUp, TestTube, Layers } from "lucide-react";
 
 /**
  * Layout Navigation Configuration
@@ -87,7 +87,15 @@ export const layoutNavigationItems: LayoutNavItem[] = [
     icon: FileUp,
     locked: false,
     settingsKey: "showUploadContent",
-  },{
+  },  {
+    id: "facebookPagesManagement",
+    label: "Facebook Pages Management",
+    description: "Manage Facebook pages for content generation and distribution.",
+    href: "/facebook-pages-management",
+    icon: Layers,
+    locked: true,
+  },
+  {
     id: "settings",
     label: "Settings",
     description: "Application settings",
