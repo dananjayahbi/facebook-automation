@@ -95,19 +95,37 @@ async function main() {
 
   console.log('✓ Image settings seeded\n');
 
-  // Layout settings
+  // Layout settings - Global defaults
   await prisma.layoutSettings.upsert({
     where: { id: 'default-layout' },
     update: {},
     create: {
       id: 'default-layout',
       showGenerateContent: true,
+      showBackgroundsGallery: true,
+      showQuoteContentUpload: true,
       showViewContent: true,
       showUploadContent: true,
     },
   });
 
   console.log('✓ Layout settings seeded\n');
+
+  // Facebook Page Layout Settings for the default page
+  await prisma.facebookPageLayoutSettings.upsert({
+    where: { facebookPageId: 'default-page' },
+    update: {},
+    create: {
+      facebookPageId: 'default-page',
+      showGenerateContent: true,
+      showBackgroundsGallery: true,
+      showQuoteContentUpload: true,
+      showViewContent: true,
+      showUploadContent: true,
+    },
+  });
+
+  console.log('✓ Facebook page layout settings seeded\n');
 
   console.log('========================================');
   console.log('✅ Database seeding completed successfully!');

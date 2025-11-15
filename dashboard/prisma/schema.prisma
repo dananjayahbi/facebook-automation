@@ -177,13 +177,15 @@ model ImageSettings {
 
 // Model for storing layout/UI settings (global defaults)
 model LayoutSettings {
-  id                    String   @id @default(cuid())
-  // Navigation visibility settings
-  showGenerateContent   Boolean  @default(true)
-  showViewContent       Boolean  @default(true)
-  showUploadContent     Boolean  @default(true)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                     String   @id @default(cuid())
+  // Navigation visibility settings - Global defaults
+  showGenerateContent    Boolean  @default(true)
+  showBackgroundsGallery Boolean  @default(true)
+  showQuoteContentUpload Boolean  @default(true)
+  showViewContent        Boolean  @default(true)
+  showUploadContent      Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 }
 
 // Model for storing per-Facebook-Page layout/UI settings
