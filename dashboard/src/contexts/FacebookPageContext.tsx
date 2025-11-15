@@ -15,6 +15,7 @@ interface FacebookPageContextType {
   activePage: FacebookPage | null;
   availablePages: FacebookPage[];
   loading: boolean;
+  switching: boolean;
   setActivePage: (page: FacebookPage) => Promise<void>;
   refreshPages: () => Promise<void>;
 }
@@ -27,6 +28,7 @@ export function FacebookPageProvider({ children }: { children: ReactNode }) {
   const [activePage, setActivePageState] = useState<FacebookPage | null>(null);
   const [availablePages, setAvailablePages] = useState<FacebookPage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [switching, setSwitching] = useState(false);
 
   // Fetch available pages
   const fetchPages = async () => {
@@ -65,6 +67,7 @@ export function FacebookPageProvider({ children }: { children: ReactNode }) {
 
   // Set active page (persist to server and localStorage)
   const setActivePage = async (page: FacebookPage) => {
+    setSwitching(true);
     try {
       const response = await fetch('/api/user-active-page', {
         method: 'POST',
@@ -83,6 +86,8 @@ export function FacebookPageProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error setting active page:', error);
       toast.error('An error occurred while switching pages');
+    } finally {
+      setSwitching(false);
     }
   };
 
@@ -157,6 +162,7 @@ export function FacebookPageProvider({ children }: { children: ReactNode }) {
         activePage,
         availablePages,
         loading,
+        switching,
         setActivePage,
         refreshPages,
       }}

@@ -85,6 +85,29 @@ export function BackgroundsView() {
     document.body.removeChild(link);
   };
 
+  const handleDelete = async (imagePath: string) => {
+    if (!selectedImage) return;
+
+    try {
+      const response = await fetch(`/api/images/delete?id=${selectedImage.id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast.success('Background deleted successfully');
+        setSelectedImage(null);
+        // Refresh the images list
+        await fetchImages();
+      } else {
+        const data = await response.json();
+        toast.error(data.message || 'Failed to delete background');
+      }
+    } catch (error) {
+      console.error('Error deleting background:', error);
+      toast.error('An error occurred while deleting the background');
+    }
+  };
+
   if (loading && images.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -138,7 +161,7 @@ export function BackgroundsView() {
                 />
               </div>
               
-              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+              <div className="absolute inset-0 bg-black/20 backdrop-blur-sm bg-opacity-0 group-hover:bg-opacity-60 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
                 <div className="text-white text-center p-4">
                   <p className="text-sm line-clamp-3">{image.prompt}</p>
                 </div>
@@ -168,9 +191,7 @@ export function BackgroundsView() {
           }}
           imageUrl={getImageUrl(selectedImage.imageUrl)}
           onClose={() => setSelectedImage(null)}
-          onDelete={() => {
-            toast.error('Delete functionality not yet implemented');
-          }}
+          onDelete={handleDelete}
           onDownload={() => handleDownload(selectedImage.imageUrl)}
         />
       )}

@@ -1,6 +1,8 @@
 "use client";
 
 import { X, Download, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { ConfirmDialog } from "@/components/common";
 
 interface ImageRecord {
   Timestamp: string;
@@ -25,7 +27,23 @@ export function ImageLightbox({
   onDelete,
   onDownload,
 }: ImageLightboxProps) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = () => {
+    setShowDeleteConfirm(false);
+    onDelete(image.ImagePath);
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false);
+  };
+
   return (
+    <>
     <div
       className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4"
       onClick={onClose}
@@ -96,7 +114,7 @@ export function ImageLightbox({
               Download
             </button>
             <button
-              onClick={() => onDelete(image.ImagePath)}
+              onClick={handleDeleteClick}
               className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium"
             >
               <Trash2 className="w-5 h-5" />
@@ -116,6 +134,19 @@ export function ImageLightbox({
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title="Delete Background Image"
+        message="Are you sure you want to delete this background image? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        danger={true}
+      />
     </div>
+    </>
   );
 }

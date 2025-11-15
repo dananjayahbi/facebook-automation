@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 import * as fs from "fs";
 import * as path from "path";
-import { parse } from "csv-parse/sync";
 
 export async function DELETE(request: Request) {
   try {
@@ -14,57 +14,53 @@ export async function DELETE(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const imagePath = searchParams.get("path");
+    const backgroundId = searchParams.get("id");
 
-    if (!imagePath) {
+    if (!backgroundId) {
       return NextResponse.json(
-        { message: "Image path is required" },
+        { message: "Background ID is required" },
         { status: 400 }
       );
     }
 
-    const csvPath = path.join(process.cwd(), "src", "assets", "sheets", "generated-images.csv");
-    const fullImagePath = path.join(process.cwd(), imagePath);
+    // Fetch the background from database
+    const background = await prisma.background.findUnique({
+      where: { id: backgroundId },
+    });
 
-    // Delete the image file
-    if (fs.existsSync(fullImagePath)) {
-      fs.unlinkSync(fullImagePath);
-    }
-
-    // Update CSV
-    if (fs.existsSync(csvPath)) {
-      const fileContent = fs.readFileSync(csvPath, "utf-8");
-      const records = parse(fileContent, {
-        columns: true,
-        skip_empty_lines: true,
-        relax_column_count: true,
-      });
-
-      const updatedRecords = records.filter(
-        (record: any) => record.ImagePath !== imagePath
+    if (!background) {
+      return NextResponse.json(
+        { message: "Background not found" },
+        { status: 404 }
       );
-
-      // Manually reconstruct CSV
-      const csvLines = ["Timestamp,ImagePath,Prompt,Model,AspectRatio"];
-      updatedRecords.forEach((record: any) => {
-        const line = [
-          record.Timestamp,
-          record.ImagePath,
-          `"${record.Prompt?.replace(/"/g, '""') || ''}"`,
-          record.Model,
-          record.AspectRatio,
-        ].join(",");
-        csvLines.push(line);
-      });
-
-      fs.writeFileSync(csvPath, csvLines.join("\n"));
     }
 
-    return NextResponse.json({ message: "Image deleted successfully" });
+    // Check if user owns this background or is admin
+    if (background.createdById !== session.user.id && session.user.role !== "SUPERADMIN") {
+      return NextResponse.json(
+        { message: "You don't have permission to delete this background" },
+        { status: 403 }
+      );
+    }
+
+    // Delete the physical image file
+    if (background.imageUrl) {
+      const fullImagePath = path.join(process.cwd(), background.imageUrl);
+      if (fs.existsSync(fullImagePath)) {
+        fs.unlinkSync(fullImagePath);
+      }
+    }
+
+    // Delete from database
+    await prisma.background.delete({
+      where: { id: backgroundId },
+    });
+
+    return NextResponse.json({ message: "Background deleted successfully" });
   } catch (error) {
-    console.error("Error deleting image:", error);
+    console.error("Error deleting background:", error);
     return NextResponse.json(
-      { message: "Failed to delete image" },
+      { message: "Failed to delete background" },
       { status: 500 }
     );
   }

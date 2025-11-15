@@ -14,7 +14,7 @@ export default function Header() {
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const pageDropdownRef = useRef<HTMLDivElement>(null);
   
-  const { activePage, availablePages, loading, setActivePage } = useFacebookPage();
+  const { activePage, availablePages, loading, switching, setActivePage } = useFacebookPage();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -36,12 +36,27 @@ export default function Header() {
   };
 
   const handlePageChange = async (page: any) => {
-    await setActivePage(page);
     setShowPageDropdown(false);
+    await setActivePage(page);
+    // Redirect to dashboard page after switching
+    router.push('/dashboard');
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 h-16 bg-white/50 backdrop-blur-lg z-40">
+    <>
+      {/* Full Page Loader when switching pages */}
+      {switching && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-9999999 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-6 shadow-xl">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-10 h-10 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-sm font-medium text-gray-700">Switching Facebook Page...</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <header className="fixed top-0 left-0 right-0 h-16 bg-white/50 backdrop-blur-lg z-60">
       <div className="h-full px-8 flex items-center justify-between border-b border-gray-200">
         {/* Left: Facebook Page Selector */}
         <div className="relative" ref={pageDropdownRef}>
@@ -68,7 +83,7 @@ export default function Header() {
 
           {/* Page Dropdown */}
           {showPageDropdown && (
-            <div className="absolute left-0 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 py-2 max-h-80 overflow-y-auto">
+            <div className="absolute left-0 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 py-2 max-h-80 overflow-y-auto" style={{ zIndex: 9999 }}>
               <div className="px-4 py-2 border-b border-gray-100">
                 <p className="text-xs font-semibold text-gray-500 uppercase">Select Facebook Page</p>
               </div>
@@ -138,5 +153,6 @@ export default function Header() {
         </div>
       </div>
     </header>
+    </>
   );
 }

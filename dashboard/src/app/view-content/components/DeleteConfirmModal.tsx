@@ -50,7 +50,7 @@ export function DeleteConfirmModal({ rowId, quote, onClose, onDelete }: DeleteCo
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-md w-full p-8 relative">
         <button
           onClick={onClose}
