@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Loader2, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -27,16 +27,9 @@ export default function MasonryGrid({ refreshTrigger }: MasonryGridProps) {
   const [hasMore, setHasMore] = useState(true);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
 
-  const observerTarget = useRef<HTMLDivElement>(null);
-  const loadingRef = useRef(false);
-
   // Fetch images
   const fetchImages = async (pageNum: number, append = false) => {
-    if (loadingRef.current) return;
-    
     try {
-      loadingRef.current = true;
-      
       if (append) {
         setLoadingMore(true);
       } else {
@@ -66,7 +59,15 @@ export default function MasonryGrid({ refreshTrigger }: MasonryGridProps) {
     } finally {
       setLoading(false);
       setLoadingMore(false);
-      loadingRef.current = false;
+    }
+  };
+
+  // Load more function for the observer
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchImages(nextPage, true);
     }
   };
 
@@ -77,32 +78,6 @@ export default function MasonryGrid({ refreshTrigger }: MasonryGridProps) {
     fetchImages(1, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshTrigger]);
-
-  // Infinite scroll observer
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingRef.current) {
-          const nextPage = page + 1;
-          setPage(nextPage);
-          fetchImages(nextPage, true);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    const currentTarget = observerTarget.current;
-    if (currentTarget) {
-      observer.observe(currentTarget);
-    }
-
-    return () => {
-      if (currentTarget) {
-        observer.unobserve(currentTarget);
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasMore, page]);
 
   // Delete image
   const handleDelete = async (id: string) => {
@@ -205,8 +180,17 @@ export default function MasonryGrid({ refreshTrigger }: MasonryGridProps) {
         </div>
       )}
 
-      {/* Intersection Observer Target */}
-      <div ref={observerTarget} className="h-10" />
+      {/* Load More Button */}
+      {hasMore && !loadingMore && images.length > 0 && (
+        <div className="flex items-center justify-center py-8">
+          <button
+            onClick={handleLoadMore}
+            className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-medium"
+          >
+            Load More
+          </button>
+        </div>
+      )}
 
       {/* No More Images */}
       {!hasMore && images.length > 0 && (
