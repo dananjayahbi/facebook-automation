@@ -27,7 +27,9 @@ export default function SideNav() {
       showGenerateContent: true,
       showViewContent: true,
       showUploadContent: true,
-      showQuoteContentUpload: true,    };
+      showQuoteContentUpload: true,
+      showBackgroundsGallery: true,
+    };
     
     // Add all toggleable items from layoutNavigationItems
     layoutNavigationItems.forEach(item => {
@@ -51,7 +53,9 @@ export default function SideNav() {
         showGenerateContent: true,
         showViewContent: true,
         showUploadContent: true,
-        showQuoteContentUpload: true,      };
+        showQuoteContentUpload: true,
+        showBackgroundsGallery: true,
+      };
       console.log('[SideNav] No active page, using basic defaults:', defaults);
       setLayoutSettings(defaults);
       return;

@@ -1,4 +1,4 @@
-import { Users, Blinds, ScanEye, Settings, User, LayoutDashboard, FileUp, TestTube, Layers, NotepadTextDashed } from "lucide-react";
+import { Users, Blinds, ScanEye, Settings, User, LayoutDashboard, FileUp, TestTube, Layers, NotepadTextDashed, Images } from "lucide-react";
 
 /**
  * Layout Navigation Configuration
@@ -36,7 +36,9 @@ export interface LayoutSettings {
   showGenerateContent: boolean;
   showViewContent: boolean;
   showUploadContent: boolean;
-  showQuoteContentUpload: boolean;  [key: string]: boolean; // Allow dynamic fields from newly created pages
+  showQuoteContentUpload: boolean;
+  showBackgroundsGallery: boolean;
+  [key: string]: boolean; // Allow dynamic fields from newly created pages
 }
 
 /**
@@ -100,13 +102,22 @@ export const layoutNavigationItems: LayoutNavItem[] = [
   },
     {
     id: "quoteContentUpload",
-    label: "Quote Content Upload Page",
-    description: "Quote Content Upload Page",
+    label: "Quote Content Upload",
+    description: "Quote Content Upload",
     href: "/quote-content-upload",
     icon: NotepadTextDashed,
     locked: false,
     settingsKey: "showQuoteContentUpload",
-  },{
+  },  {
+    id: "backgroundsGallery",
+    label: "Background Gallery Page",
+    description: "Background Gallery Page",
+    href: "/backgrounds-gallery",
+    icon: Images,
+    locked: false,
+    settingsKey: "showBackgroundsGallery",
+  },
+  {
     id: "settings",
     label: "Settings",
     description: "Application settings",

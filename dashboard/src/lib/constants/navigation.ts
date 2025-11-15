@@ -1,4 +1,4 @@
-import { Users, Blinds, ScanEye, Settings, FileUp, TestTube, Facebook, Layers, NotepadTextDashed } from "lucide-react";
+import { Users, Blinds, ScanEye, Settings, FileUp, TestTube, Facebook, Layers, NotepadTextDashed, Images } from "lucide-react";
 
 /**
  * Navigation Configuration
@@ -66,7 +66,12 @@ export const navigationItems: NavItem[] = [
     icon: Layers,
   },
   {
-    name: "Quote Content Upload Page",
+    name: "Quote Content Upload",
     href: "/quote-content-upload",
     icon: NotepadTextDashed,
-  },];
+  },  {
+    name: "Background Gallery Page",
+    href: "/backgrounds-gallery",
+    icon: Images,
+  },
+];

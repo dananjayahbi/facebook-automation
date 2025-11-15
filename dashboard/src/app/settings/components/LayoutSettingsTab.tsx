@@ -12,7 +12,9 @@ export default function LayoutSettingsTab() {
     showGenerateContent: true,
     showViewContent: true,
     showUploadContent: true,
-    showQuoteContentUpload: true,  });
+    showQuoteContentUpload: true,
+    showBackgroundsGallery: true,
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
