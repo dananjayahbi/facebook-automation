@@ -35,10 +35,11 @@ model User {
   updatedAt DateTime @updatedAt
   
   // Relations
-  quotes         Quote[]
-  uploadedQuotes UploadedQuote[]
-  backgrounds    Background[]
-  activePage     UserActivePage?
+  quotes            Quote[]
+  uploadedQuotes    UploadedQuote[]
+  backgrounds       Background[]
+  backgroundImages  BackgroundImage[]
+  activePage        UserActivePage?
 }
 
 model FacebookPage {
@@ -216,4 +217,17 @@ model UserActivePage {
   
   @@index([userId])
   @@index([facebookPageId])
+}
+
+model BackgroundImage {
+  id            String   @id @default(cuid())
+  filename      String   // UUID-based filename
+  path          String   // Relative path to the image
+  uploadedById  String
+  uploadedBy    User     @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([uploadedById])
+  @@index([createdAt])
 }
