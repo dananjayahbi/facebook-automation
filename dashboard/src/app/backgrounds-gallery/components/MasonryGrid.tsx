@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Loader2, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
+import Masonry from "react-masonry-css";
 
 interface BackgroundImage {
   id: string;
@@ -127,12 +128,21 @@ export default function MasonryGrid({ refreshTrigger }: MasonryGridProps) {
 
   return (
     <div>
-      {/* Masonry Grid */}
-      <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
+      {/* Masonry Grid with react-masonry-css */}
+      <Masonry
+        breakpointCols={{
+          default: 4,
+          1024: 3,
+          768: 2,
+          640: 1,
+        }}
+        className="flex -ml-4 w-auto"
+        columnClassName="pl-4 bg-clip-padding"
+      >
         {images.map((image) => (
           <div
             key={image.id}
-            className="break-inside-avoid relative group bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow"
+            className="mb-4 relative group bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow"
           >
             {/* Image */}
             <div className="relative w-full">
@@ -171,7 +181,7 @@ export default function MasonryGrid({ refreshTrigger }: MasonryGridProps) {
             </div>
           </div>
         ))}
-      </div>
+      </Masonry>
 
       {/* Loading More Indicator */}
       {loadingMore && (
