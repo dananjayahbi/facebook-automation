@@ -36,9 +36,7 @@ export interface LayoutSettings {
   showGenerateContent: boolean;
   showViewContent: boolean;
   showUploadContent: boolean;
-  showQuoteContentUpload: boolean;
-  showHey: boolean;
-  [key: string]: boolean; // Allow dynamic fields from newly created pages
+  showQuoteContentUpload: boolean;  [key: string]: boolean; // Allow dynamic fields from newly created pages
 }
 
 /**
@@ -108,17 +106,7 @@ export const layoutNavigationItems: LayoutNavItem[] = [
     icon: NotepadTextDashed,
     locked: false,
     settingsKey: "showQuoteContentUpload",
-  },
-    {
-    id: "hey",
-    label: "Hey",
-    description: "TestTube",
-    href: "/hey",
-    icon: TestTube,
-    locked: false,
-    settingsKey: "showHey",
-  },
-  {
+  },{
     id: "settings",
     label: "Settings",
     description: "Application settings",

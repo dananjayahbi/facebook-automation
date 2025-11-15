@@ -69,10 +69,4 @@ export const navigationItems: NavItem[] = [
     name: "Quote Content Upload Page",
     href: "/quote-content-upload",
     icon: NotepadTextDashed,
-  },
-  {
-    name: "Hey",
-    href: "/hey",
-    icon: TestTube,
-  },
-];
+  },];

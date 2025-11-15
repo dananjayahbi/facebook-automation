@@ -188,17 +188,16 @@ async function main() {
       const sideNavPath = path.join(projectRoot, 'src', 'components', 'layout', 'SideNav.tsx');
       let sideNavContent = fs.readFileSync(sideNavPath, 'utf8');
       
-      // Remove from default state - match entire property line
-      const sideNavStateFieldRegex = new RegExp(`^\\s*${settingsKey}:\\s*[^,\\n]+,?\\s*\\n`, 'gm');
-      sideNavContent = sideNavContent.replace(sideNavStateFieldRegex, '');
+      // Remove from getDefaultSettings() function - match entire property line
+      const getDefaultsFieldRegex = new RegExp(`^\\s*${settingsKey}:\\s*[^,\\n]+,?\\s*\\n`, 'gm');
+      sideNavContent = sideNavContent.replace(getDefaultsFieldRegex, '');
       
-      // Remove from fetchLayoutSettings - match entire property line
-      // Note: SideNav uses /api/facebook-page-settings (per-page) not global settings
-      const sideNavFetchFieldRegex = new RegExp(`^\\s*${settingsKey}:\\s*data\\.${settingsKey},?\\s*\\n`, 'gm');
-      sideNavContent = sideNavContent.replace(sideNavFetchFieldRegex, '');
+      // Remove from fetchLayoutSettings when no active page - match entire property line
+      const fetchDefaultsFieldRegex = new RegExp(`^\\s*${settingsKey}:\\s*[^,\\n]+,?\\s*\\n`, 'gm');
+      sideNavContent = sideNavContent.replace(fetchDefaultsFieldRegex, '');
       
       fs.writeFileSync(sideNavPath, sideNavContent);
-      console.log(`${colors.green}✓ Updated SideNav.tsx (using per-page settings)${colors.reset}`);
+      console.log(`${colors.green}✓ Updated SideNav.tsx (removed from getDefaultSettings and fetchLayoutSettings defaults)${colors.reset}`);
       
       // Step 9: Update LayoutSettingsTab
       console.log(`\n${colors.blue}⚙️  Step 9: Updating LayoutSettingsTab Component${colors.reset}`);
