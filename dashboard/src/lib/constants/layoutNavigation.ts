@@ -36,6 +36,8 @@ export interface LayoutSettings {
   showGenerateContent: boolean;
   showViewContent: boolean;
   showUploadContent: boolean;
+  showQuoteContentUpload: boolean;
+  showHey: boolean;
   [key: string]: boolean; // Allow dynamic fields from newly created pages
 }
 

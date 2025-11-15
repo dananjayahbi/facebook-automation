@@ -12,6 +12,7 @@ export default function LayoutSettingsTab() {
     showGenerateContent: true,
     showViewContent: true,
     showUploadContent: true,
+    showQuoteContentUpload: true,
     showHey: true,
   });
   const [loading, setLoading] = useState(true);

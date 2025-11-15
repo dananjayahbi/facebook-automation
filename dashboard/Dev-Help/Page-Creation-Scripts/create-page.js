@@ -323,22 +323,20 @@ export default function ${pageFunctionName}() {
       if (sideNavContent.includes(`${settingsKey}:`)) {
         console.log(`${colors.yellow}⚠️  Field ${settingsKey} already exists in SideNav, skipping SideNav update${colors.reset}`);
       } else {
-        // Update default state - find the last property before closing brace and add new field
-        // Match the last property line ending with comma or no comma
+        // Update getDefaultSettings() function - find the last property before closing brace
         sideNavContent = sideNavContent.replace(
-          /(const \[layoutSettings, setLayoutSettings\] = useState<LayoutSettings>\(\{[\s\S]*?)(    \w+: \w+,?)(\s*\n  \}\);)/m,
-          `$1$2\n    ${settingsKey}: true,$3`
+          /(const getDefaultSettings = \(\): LayoutSettings => \{[\s\S]*?const defaults: Record<string, boolean> = \{[\s\S]*?)(      \w+: \w+,)(\s*\n    \};)/m,
+          `$1$2\n      ${settingsKey}: true,$3`
         );
         
-        // Update fetchLayoutSettings - find last property and add new field
-        // Note: SideNav uses /api/facebook-page-settings (per-page) not global settings
+        // Update fetchLayoutSettings defaults (when no active page) - find last property and add new field
         sideNavContent = sideNavContent.replace(
-          /(const settings: LayoutSettings = \{[\s\S]*?)(        \w+: data\.\w+,?)(\s*\n      \};)/m,
-          `$1$2\n        ${settingsKey}: data.${settingsKey},$3`
+          /(if \(!activePage\) \{[\s\S]*?const defaults = \{[\s\S]*?)(        \w+: \w+,)(\s*\n      \};)/m,
+          `$1$2\n        ${settingsKey}: true,$3`
         );
         
         fs.writeFileSync(sideNavPath, sideNavContent);
-        console.log(`${colors.green}✓ Updated SideNav.tsx (using per-page settings)${colors.reset}`);
+        console.log(`${colors.green}✓ Updated SideNav.tsx (getDefaultSettings and fetchLayoutSettings)${colors.reset}`);
       }
       
       // Step 9: Update LayoutSettingsTab
