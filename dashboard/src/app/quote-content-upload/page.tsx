@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from '@/components/layout';
+import { PageLoader } from '@/components/common';
 import { Eye, Download, Upload, ChevronDown, ChevronUp } from "lucide-react";
 import TemplateModal from "./components/TemplateModal";
 import UploadCSVModal from "./components/UploadCSVModal";
@@ -12,6 +13,15 @@ export default function QuoteContentUploadPage() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isInstructionsExpanded, setIsInstructionsExpanded] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate initial load
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleDownloadTemplate = () => {
     // Create CSV content
@@ -38,6 +48,10 @@ export default function QuoteContentUploadPage() {
     // Trigger refresh of the quotes table
     setRefreshTrigger(prev => prev + 1);
   };
+
+  if (isLoading) {
+    return <PageLoader />;
+  }
 
   return (
     <DashboardLayout>
