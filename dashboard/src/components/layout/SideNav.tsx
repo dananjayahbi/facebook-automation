@@ -6,6 +6,7 @@ import { LayoutDashboard, User } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { layoutNavigationItems, getFilteredNavItems, type LayoutSettings } from "@/lib/constants";
 import { useState, useEffect } from "react";
+import { useFacebookPage } from "@/contexts/FacebookPageContext";
 
 /**
  * SideNav Component
@@ -18,29 +19,42 @@ import { useState, useEffect } from "react";
 export default function SideNav() {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const { activePage } = useFacebookPage();
   
   // Always initialize with default values to match server render
   const [layoutSettings, setLayoutSettings] = useState<LayoutSettings>({
     showGenerateContent: true,
     showViewContent: true,
-    showUploadContent: true,  });
+    showUploadContent: true,
+  });
 
   const [isMounted, setIsMounted] = useState(false);
 
   const fetchLayoutSettings = async () => {
+    if (!activePage) {
+      // If no active page, use default settings
+      setLayoutSettings({
+        showGenerateContent: true,
+        showViewContent: true,
+        showUploadContent: true,
+      });
+      return;
+    }
+
     try {
-      const res = await fetch("/api/settings/layout-settings");
+      const res = await fetch(`/api/facebook-page-settings?facebookPageId=${activePage.id}`);
       const data = await res.json();
       const settings: LayoutSettings = {
         showGenerateContent: data.showGenerateContent,
         showViewContent: data.showViewContent,
-        showUploadContent: data.showUploadContent,      };
+        showUploadContent: data.showUploadContent,
+      };
       
       setLayoutSettings(settings);
       
-      // Update localStorage
+      // Update localStorage with page-specific key
       if (typeof window !== "undefined") {
-        localStorage.setItem("layoutSettings", JSON.stringify(settings));
+        localStorage.setItem(`layoutSettings_${activePage.id}`, JSON.stringify(settings));
       }
     } catch (err) {
       console.error("Error fetching layout settings:", err);
@@ -51,8 +65,8 @@ export default function SideNav() {
     setIsMounted(true);
     
     // Read from localStorage AFTER first render to avoid hydration mismatch
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("layoutSettings");
+    if (typeof window !== "undefined" && activePage) {
+      const stored = localStorage.getItem(`layoutSettings_${activePage.id}`);
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
@@ -63,7 +77,7 @@ export default function SideNav() {
       }
     }
 
-    // Fetch layout settings on mount to sync with database
+    // Fetch layout settings on mount and when active page changes
     fetchLayoutSettings();
 
     // Listen for layout settings updates
@@ -76,7 +90,7 @@ export default function SideNav() {
     return () => {
       window.removeEventListener("layoutSettingsUpdated", handleLayoutUpdate);
     };
-  }, []);
+  }, [activePage]); // Re-run when active page changes
 
   // Sync localStorage when user logs in
   useEffect(() => {

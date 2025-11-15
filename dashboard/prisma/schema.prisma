@@ -50,9 +50,10 @@ model FacebookPage {
   updatedAt   DateTime @updatedAt
   
   // Relations
-  quotes       Quote[]
-  backgrounds  Background[]
-  activeUsers  UserActivePage[]
+  quotes         Quote[]
+  backgrounds    Background[]
+  activeUsers    UserActivePage[]
+  layoutSettings FacebookPageLayoutSettings?
   
   @@index([isActive])
 }
@@ -144,7 +145,7 @@ model ImageSettings {
   updatedAt         DateTime @updatedAt
 }
 
-// Model for storing layout/UI settings
+// Model for storing layout/UI settings (global defaults)
 model LayoutSettings {
   id                    String   @id @default(cuid())
   // Navigation visibility settings
@@ -153,6 +154,23 @@ model LayoutSettings {
   showUploadContent     Boolean  @default(true)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
+}
+
+// Model for storing per-Facebook-Page layout/UI settings
+model FacebookPageLayoutSettings {
+  id                    String       @id @default(cuid())
+  facebookPageId        String       @unique
+  facebookPage          FacebookPage @relation(fields: [facebookPageId], references: [id], onDelete: Cascade)
+  
+  // Navigation visibility settings for this Facebook Page
+  showGenerateContent   Boolean      @default(true)
+  showViewContent       Boolean      @default(true)
+  showUploadContent     Boolean      @default(true)
+  
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  
+  @@index([facebookPageId])
 }
 
 // Model for storing user's active Facebook Page selection

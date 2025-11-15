@@ -4,29 +4,38 @@ import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { Eye, EyeOff, Lock } from "lucide-react";
 import { layoutNavigationItems, type LayoutSettings } from "@/lib/constants";
+import { useFacebookPage } from "@/contexts/FacebookPageContext";
 
 export default function LayoutSettingsTab() {
+  const { activePage } = useFacebookPage();
   const [settings, setSettings] = useState<LayoutSettings>({
     showGenerateContent: true,
     showViewContent: true,
-    showUploadContent: true,  });
+    showUploadContent: true,
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchSettings();
-  }, []);
+  }, [activePage]); // Re-fetch when active page changes
 
   const fetchSettings = async () => {
+    if (!activePage) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      const response = await fetch("/api/settings/layout-settings");
+      const response = await fetch(`/api/facebook-page-settings?facebookPageId=${activePage.id}`);
       if (response.ok) {
         const data = await response.json();
         setSettings({
           showGenerateContent: data.showGenerateContent,
           showViewContent: data.showViewContent,
-          showUploadContent: data.showUploadContent,        });
+          showUploadContent: data.showUploadContent,
+        });
       }
     } catch (error) {
       console.error("Error fetching layout settings:", error);
@@ -37,6 +46,11 @@ export default function LayoutSettingsTab() {
   };
 
   const handleToggle = async (field: keyof LayoutSettings) => {
+    if (!activePage) {
+      toast.error("No active Facebook Page selected");
+      return;
+    }
+
     try {
       setSaving(true);
       const newSettings = {
@@ -44,12 +58,15 @@ export default function LayoutSettingsTab() {
         [field]: !settings[field],
       };
 
-      const response = await fetch("/api/settings/layout-settings", {
+      const response = await fetch("/api/facebook-page-settings", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(newSettings),
+        body: JSON.stringify({
+          facebookPageId: activePage.id,
+          ...newSettings,
+        }),
       });
 
       if (!response.ok) {
@@ -58,9 +75,9 @@ export default function LayoutSettingsTab() {
 
       setSettings(newSettings);
       
-      // Update localStorage for instant load on refresh
+      // Update localStorage for instant load on refresh (page-specific key)
       if (typeof window !== "undefined") {
-        localStorage.setItem("layoutSettings", JSON.stringify(newSettings));
+        localStorage.setItem(`layoutSettings_${activePage.id}`, JSON.stringify(newSettings));
       }
       
       toast.success("Layout settings updated");
@@ -83,12 +100,23 @@ export default function LayoutSettingsTab() {
     );
   }
 
+  if (!activePage) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Please select a Facebook Page to view settings</div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold mb-2">Layout Settings</h2>
         <p className="text-gray-600">
-          Customize which navigation items are visible in the sidebar.
+          Customize which navigation items are visible in the sidebar for <span className="font-semibold text-[#5B50E8]">{activePage.name}</span>.
+        </p>
+        <p className="text-sm text-gray-500 mt-1">
+          Each Facebook Page profile has its own independent navigation settings.
         </p>
       </div>
 
