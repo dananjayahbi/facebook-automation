@@ -1,4 +1,4 @@
-import { Users, Blinds, ScanEye, Settings, User, LayoutDashboard, FileUp, TestTube, Layers } from "lucide-react";
+import { Users, Blinds, ScanEye, Settings, User, LayoutDashboard, FileUp, TestTube, Layers, NotepadTextDashed } from "lucide-react";
 
 /**
  * Layout Navigation Configuration
@@ -29,12 +29,15 @@ export interface LayoutNavItem {
 
 /**
  * Layout Settings Interface
- * Must match the LayoutSettings model in prisma/schema.prisma
+ * Must include at minimum the core settings fields.
+ * Can be extended with additional dynamic fields added via page creation scripts.
  */
 export interface LayoutSettings {
   showGenerateContent: boolean;
   showViewContent: boolean;
-  showUploadContent: boolean;}
+  showUploadContent: boolean;
+  [key: string]: boolean; // Allow dynamic fields from newly created pages
+}
 
 /**
  * All Layout Navigation Items
@@ -94,6 +97,24 @@ export const layoutNavigationItems: LayoutNavItem[] = [
     href: "/facebook-pages-management",
     icon: Layers,
     locked: true,
+  },
+    {
+    id: "quoteContentUpload",
+    label: "Quote Content Upload Page",
+    description: "Quote Content Upload Page",
+    href: "/quote-content-upload",
+    icon: NotepadTextDashed,
+    locked: false,
+    settingsKey: "showQuoteContentUpload",
+  },
+    {
+    id: "hey",
+    label: "Hey",
+    description: "TestTube",
+    href: "/hey",
+    icon: TestTube,
+    locked: false,
+    settingsKey: "showHey",
   },
   {
     id: "settings",

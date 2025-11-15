@@ -28,13 +28,12 @@ export async function GET(request: Request) {
     });
 
     // If no settings exist, create default ones
+    // Let Prisma use schema defaults for all fields
     if (!settings) {
       settings = await prisma.facebookPageLayoutSettings.create({
         data: {
           facebookPageId,
-          showGenerateContent: true,
-          showViewContent: true,
-          showUploadContent: true,
+          // Prisma will use @default(true) from schema for all boolean fields
         },
       });
     }
@@ -59,12 +58,7 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const {
-      facebookPageId,
-      showGenerateContent,
-      showViewContent,
-      showUploadContent,
-    } = body;
+    const { facebookPageId, ...settingsToUpdate } = body;
 
     if (!facebookPageId) {
       return NextResponse.json(
@@ -73,20 +67,28 @@ export async function PATCH(request: Request) {
       );
     }
 
-    // Update or create settings
+    // Extract only boolean fields for settings (filter out non-boolean values)
+    const booleanSettings: Record<string, boolean> = {};
+    for (const key in settingsToUpdate) {
+      if (typeof settingsToUpdate[key] === 'boolean') {
+        booleanSettings[key] = settingsToUpdate[key];
+      }
+    }
+
+    // Get existing settings to preserve fields not being updated
+    const existingSettings = await prisma.facebookPageLayoutSettings.findUnique({
+      where: { facebookPageId },
+    });
+
+    // Update or create settings with all boolean fields
     const settings = await prisma.facebookPageLayoutSettings.upsert({
       where: { facebookPageId },
       create: {
         facebookPageId,
-        showGenerateContent: showGenerateContent ?? true,
-        showViewContent: showViewContent ?? true,
-        showUploadContent: showUploadContent ?? true,
+        // Merge schema defaults with provided settings
+        ...booleanSettings,
       },
-      update: {
-        ...(showGenerateContent !== undefined && { showGenerateContent }),
-        ...(showViewContent !== undefined && { showViewContent }),
-        ...(showUploadContent !== undefined && { showUploadContent }),
-      },
+      update: booleanSettings, // Only update the provided fields
     });
 
     return NextResponse.json(settings);

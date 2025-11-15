@@ -151,13 +151,13 @@ async function main() {
       const schemaPath = path.join(projectRoot, 'prisma', 'schema.prisma');
       let schemaContent = fs.readFileSync(schemaPath, 'utf8');
       
-      // Remove field from LayoutSettings model
+      // Remove field from FacebookPageLayoutSettings model (per-page settings)
       // Match the entire line including leading whitespace but preserve the newline structure
       const schemaFieldRegex = new RegExp(`^\\s*${settingsKey}\\s+Boolean\\s+@default\\(true\\)\\s*\\n`, 'gm');
       schemaContent = schemaContent.replace(schemaFieldRegex, '');
       
       fs.writeFileSync(schemaPath, schemaContent);
-      console.log(`${colors.green}✓ Updated schema.prisma${colors.reset}`);
+      console.log(`${colors.green}✓ Updated schema.prisma (FacebookPageLayoutSettings)${colors.reset}`);
       
       // Step 6: Sync database with Prisma schema
       console.log(`\n${colors.blue}🔄 Step 6: Syncing Database with Schema${colors.reset}`);
@@ -177,28 +177,10 @@ async function main() {
         throw error;
       }
       
-      // Step 7: Update API route
-      console.log(`\n${colors.blue}🔌 Step 7: Updating API Route${colors.reset}`);
-      
-      const apiRoutePath = path.join(projectRoot, 'src', 'app', 'api', 'settings', 'layout-settings', 'route.ts');
-      let apiContent = fs.readFileSync(apiRoutePath, 'utf8');
-      
-      // Remove from GET method - create section
-      // Match the entire property line: "  propertyName: value,"
-      const getCreateFieldRegex = new RegExp(`^\\s*${settingsKey}:\\s*[^,\\n]+,?\\s*\\n`, 'gm');
-      apiContent = apiContent.replace(getCreateFieldRegex, '');
-      
-      // Remove from PATCH method - destructure
-      const destructureRegex = new RegExp(`,\\s*${settingsKey}(?=\\s*\\})`, 'g');
-      apiContent = apiContent.replace(destructureRegex, '');
-      
-      // Remove from PATCH method - create and update sections
-      // Match the entire property line with proper formatting
-      const patchFieldRegex = new RegExp(`^\\s*${settingsKey}:\\s*${settingsKey}[^\\n]*\\n`, 'gm');
-      apiContent = apiContent.replace(patchFieldRegex, '');
-      
-      fs.writeFileSync(apiRoutePath, apiContent);
-      console.log(`${colors.green}✓ Updated API route${colors.reset}`);
+      // Step 7: Skip old global API route update (now using per-page settings)
+      console.log(`\n${colors.blue}🔌 Step 7: Skipping Global API Route Update${colors.reset}`);
+      console.log(`${colors.yellow}ℹ️  Using per-Facebook-Page settings via /api/facebook-page-settings${colors.reset}`);
+      console.log(`${colors.yellow}ℹ️  Global /api/settings/layout-settings is deprecated${colors.reset}`);
       
       // Step 8: Update SideNav
       console.log(`\n${colors.blue}🎨 Step 8: Updating SideNav Component${colors.reset}`);
@@ -211,11 +193,12 @@ async function main() {
       sideNavContent = sideNavContent.replace(sideNavStateFieldRegex, '');
       
       // Remove from fetchLayoutSettings - match entire property line
+      // Note: SideNav uses /api/facebook-page-settings (per-page) not global settings
       const sideNavFetchFieldRegex = new RegExp(`^\\s*${settingsKey}:\\s*data\\.${settingsKey},?\\s*\\n`, 'gm');
       sideNavContent = sideNavContent.replace(sideNavFetchFieldRegex, '');
       
       fs.writeFileSync(sideNavPath, sideNavContent);
-      console.log(`${colors.green}✓ Updated SideNav.tsx${colors.reset}`);
+      console.log(`${colors.green}✓ Updated SideNav.tsx (using per-page settings)${colors.reset}`);
       
       // Step 9: Update LayoutSettingsTab
       console.log(`\n${colors.blue}⚙️  Step 9: Updating LayoutSettingsTab Component${colors.reset}`);
@@ -228,11 +211,12 @@ async function main() {
       settingsTabContent = settingsTabContent.replace(settingsTabStateFieldRegex, '');
       
       // Remove from fetchSettings - match entire property line
+      // Note: LayoutSettingsTab uses /api/facebook-page-settings (per-page) not global settings
       const settingsTabFetchFieldRegex = new RegExp(`^\\s*${settingsKey}:\\s*data\\.${settingsKey},?\\s*\\n`, 'gm');
       settingsTabContent = settingsTabContent.replace(settingsTabFetchFieldRegex, '');
       
       fs.writeFileSync(settingsTabPath, settingsTabContent);
-      console.log(`${colors.green}✓ Updated LayoutSettingsTab.tsx${colors.reset}`);
+      console.log(`${colors.green}✓ Updated LayoutSettingsTab.tsx (using per-page settings)${colors.reset}`);
     } else {
       console.log(`\n${colors.yellow}ℹ️  Page is locked/always visible - skipping schema and settings updates${colors.reset}`);
     }
@@ -267,12 +251,12 @@ ${colors.reset}`);
     console.log(`  ✓ src/lib/constants/layoutNavigation.ts`);
     
     if (hasSettingsKey) {
-      console.log(`  ✓ prisma/schema.prisma`);
-      console.log(`  ✓ src/app/api/settings/layout-settings/route.ts`);
+      console.log(`  ✓ prisma/schema.prisma (FacebookPageLayoutSettings)`);
       console.log(`  ✓ src/components/layout/SideNav.tsx`);
       console.log(`  ✓ src/app/settings/components/LayoutSettingsTab.tsx`);
       console.log(`\n${colors.cyan}💾 Database:${colors.reset}`);
       console.log(`  ✓ Schema synced with db push`);
+      console.log(`  ℹ️  Settings are per-Facebook-Page (not global)`);
     }
     
     console.log(`\n${colors.cyan}🔧 Generated:${colors.reset}`);

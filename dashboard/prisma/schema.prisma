@@ -164,6 +164,8 @@ model FacebookPageLayoutSettings {
   
   // Navigation visibility settings for this Facebook Page
   showGenerateContent   Boolean      @default(true)
+  showHey                Boolean      @default(true)
+  showQuoteContentUpload Boolean      @default(true)
   showViewContent       Boolean      @default(true)
   showUploadContent     Boolean      @default(true)
   

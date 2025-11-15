@@ -252,16 +252,16 @@ export default function ${pageFunctionName}() {
       const schemaPath = path.join(projectRoot, 'prisma', 'schema.prisma');
       let schemaContent = fs.readFileSync(schemaPath, 'utf8');
       
-      // Check if field already exists
-      if (schemaContent.includes(settingsKey)) {
-        console.log(`${colors.yellow}⚠️  Field ${settingsKey} already exists in schema, skipping schema update${colors.reset}`);
+      // Check if field already exists in FacebookPageLayoutSettings
+      if (schemaContent.match(new RegExp(`model FacebookPageLayoutSettings[^}]*${settingsKey}[^}]*}`, 's'))) {
+        console.log(`${colors.yellow}⚠️  Field ${settingsKey} already exists in FacebookPageLayoutSettings, skipping schema update${colors.reset}`);
       } else {
-        // Add field to LayoutSettings model
-        const modelRegex = /model LayoutSettings \{([^}]+)\}/;
+        // Add field to FacebookPageLayoutSettings model (per-page settings)
+        const modelRegex = /model FacebookPageLayoutSettings \{([^}]+)\}/s;
         const modelMatch = schemaContent.match(modelRegex);
         if (modelMatch) {
           const modelContent = modelMatch[1];
-          // Find the last Boolean field line and add new field after it
+          // Find the last Boolean field line (before createdAt) and add new field after it
           const lines = modelContent.split('\n');
           const lastBooleanIndex = lines.findIndex((line, idx) => 
             line.includes('Boolean') && 
@@ -269,16 +269,16 @@ export default function ${pageFunctionName}() {
           );
           
           if (lastBooleanIndex !== -1) {
-            lines.splice(lastBooleanIndex + 1, 0, `  ${settingsKey.padEnd(22)} Boolean  @default(true)`);
+            lines.splice(lastBooleanIndex + 1, 0, `  ${settingsKey.padEnd(22)} Boolean      @default(true)`);
             const newModelContent = lines.join('\n');
-            schemaContent = schemaContent.replace(modelRegex, `model LayoutSettings {${newModelContent}}`);
+            schemaContent = schemaContent.replace(modelRegex, `model FacebookPageLayoutSettings {${newModelContent}}`);
             schemaUpdated = true;
           }
         }
         
         if (schemaUpdated) {
           fs.writeFileSync(schemaPath, schemaContent);
-          console.log(`${colors.green}✓ Updated schema.prisma${colors.reset}`);
+          console.log(`${colors.green}✓ Updated schema.prisma (FacebookPageLayoutSettings)${colors.reset}`);
         }
       }
       
@@ -308,45 +308,10 @@ export default function ${pageFunctionName}() {
         console.log(`${colors.yellow}ℹ️  Skipping database sync (schema not modified)${colors.reset}`);
       }
       
-      // Step 7: Update API route
-      console.log(`\n${colors.blue}🔌 Step 7: Updating API Route${colors.reset}`);
-      
-      const apiRoutePath = path.join(projectRoot, 'src', 'app', 'api', 'settings', 'layout-settings', 'route.ts');
-      let apiContent = fs.readFileSync(apiRoutePath, 'utf8');
-      
-      // Check if field already exists in API route
-      if (apiContent.includes(settingsKey)) {
-        console.log(`${colors.yellow}⚠️  Field ${settingsKey} already exists in API route, skipping API update${colors.reset}`);
-      } else {
-        // Update GET method - create section
-        // Find the last property before closing brace in the create data object
-        apiContent = apiContent.replace(
-          /(settings = await prisma\.layoutSettings\.create\(\{\s*data:\s*\{[\s\S]*?)(          \w+: \w+,?)(\s*\n        \},)/m,
-          `$1$2\n          ${settingsKey}: true,$3`
-        );
-        
-        // Update PATCH method - destructure
-        // Add to the destructuring - find last variable in destructure
-        apiContent = apiContent.replace(
-          /(const \{[\s\S]*?)(\w+)( \} = body;)/,
-          `$1$2, ${settingsKey}$3`
-        );
-        
-        // Update PATCH method - create section (in if (!settings) block)
-        apiContent = apiContent.replace(
-          /(if \(!settings\) \{[\s\S]*?settings = await prisma\.layoutSettings\.create\(\{[\s\S]*?data:\s*\{[\s\S]*?)(          \w+: \w+ \?\? \w+,?)(\s*\n        \},)/m,
-          `$1$2\n          ${settingsKey}: ${settingsKey} ?? true,$3`
-        );
-        
-        // Update PATCH method - update section (in else block)
-        apiContent = apiContent.replace(
-          /(} else \{[\s\S]*?settings = await prisma\.layoutSettings\.update\(\{[\s\S]*?data:\s*\{[\s\S]*?)(          \w+: \w+ \?\? settings\.\w+,?)(\s*\n        \},)/m,
-          `$1$2\n          ${settingsKey}: ${settingsKey} ?? settings.${settingsKey},$3`
-        );
-        
-        fs.writeFileSync(apiRoutePath, apiContent);
-        console.log(`${colors.green}✓ Updated API route${colors.reset}`);
-      }
+      // Step 7: Skip old global API route update (now using per-page settings)
+      console.log(`\n${colors.blue}🔌 Step 7: Skipping Global API Route Update${colors.reset}`);
+      console.log(`${colors.yellow}ℹ️  Using per-Facebook-Page settings via /api/facebook-page-settings${colors.reset}`);
+      console.log(`${colors.yellow}ℹ️  Global /api/settings/layout-settings is deprecated${colors.reset}`);
       
       // Step 8: Update SideNav
       console.log(`\n${colors.blue}🎨 Step 8: Updating SideNav Component${colors.reset}`);
@@ -366,13 +331,14 @@ export default function ${pageFunctionName}() {
         );
         
         // Update fetchLayoutSettings - find last property and add new field
+        // Note: SideNav uses /api/facebook-page-settings (per-page) not global settings
         sideNavContent = sideNavContent.replace(
           /(const settings: LayoutSettings = \{[\s\S]*?)(        \w+: data\.\w+,?)(\s*\n      \};)/m,
           `$1$2\n        ${settingsKey}: data.${settingsKey},$3`
         );
         
         fs.writeFileSync(sideNavPath, sideNavContent);
-        console.log(`${colors.green}✓ Updated SideNav.tsx${colors.reset}`);
+        console.log(`${colors.green}✓ Updated SideNav.tsx (using per-page settings)${colors.reset}`);
       }
       
       // Step 9: Update LayoutSettingsTab
@@ -392,13 +358,14 @@ export default function ${pageFunctionName}() {
         );
         
         // Update fetchSettings - find last property in setSettings and add new field
+        // Note: LayoutSettingsTab uses /api/facebook-page-settings (per-page) not global settings
         settingsTabContent = settingsTabContent.replace(
           /(setSettings\(\{[\s\S]*?)(          \w+: data\.\w+,?)(\s*\n        \}\);)/m,
           `$1$2\n          ${settingsKey}: data.${settingsKey},$3`
         );
         
         fs.writeFileSync(settingsTabPath, settingsTabContent);
-        console.log(`${colors.green}✓ Updated LayoutSettingsTab.tsx${colors.reset}`);
+        console.log(`${colors.green}✓ Updated LayoutSettingsTab.tsx (using per-page settings)${colors.reset}`);
       }
     } else {
       console.log(`\n${colors.yellow}ℹ️  Skipping schema/database updates (page is locked/always visible)${colors.reset}`);
@@ -421,14 +388,14 @@ ${colors.reset}`);
     console.log(`  ✓ src/lib/constants/layoutNavigation.ts`);
     
     if (!isLocked) {
-      console.log(`  ✓ prisma/schema.prisma`);
-      console.log(`  ✓ src/app/api/settings/layout-settings/route.ts`);
+      console.log(`  ✓ prisma/schema.prisma (FacebookPageLayoutSettings)`);
       console.log(`  ✓ src/components/layout/SideNav.tsx`);
       console.log(`  ✓ src/app/settings/components/LayoutSettingsTab.tsx`);
       if (schemaUpdated) {
         console.log(`\n${colors.cyan}💾 Database:${colors.reset}`);
         console.log(`  ✓ Schema synced with db push`);
         console.log(`  ℹ️  No migration files created (using db push for development)`);
+        console.log(`  ℹ️  Settings are per-Facebook-Page (not global)`);
       } else if (!schemaUpdated) {
         console.log(`\n${colors.cyan}💾 Database:${colors.reset}`);
         console.log(`  ℹ️  No changes needed (field already exists)`);

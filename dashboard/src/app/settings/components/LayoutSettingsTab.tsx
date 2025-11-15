@@ -12,6 +12,7 @@ export default function LayoutSettingsTab() {
     showGenerateContent: true,
     showViewContent: true,
     showUploadContent: true,
+    showHey: true,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -31,11 +32,16 @@ export default function LayoutSettingsTab() {
       const response = await fetch(`/api/facebook-page-settings?facebookPageId=${activePage.id}`);
       if (response.ok) {
         const data = await response.json();
-        setSettings({
-          showGenerateContent: data.showGenerateContent,
-          showViewContent: data.showViewContent,
-          showUploadContent: data.showUploadContent,
-        });
+        
+        // Extract only boolean settings fields (exclude id, timestamps, facebookPageId, etc.)
+        const settings: Record<string, boolean> = {};
+        for (const key in data) {
+          if (typeof data[key] === 'boolean') {
+            settings[key] = data[key];
+          }
+        }
+        
+        setSettings(settings as LayoutSettings);
       }
     } catch (error) {
       console.error("Error fetching layout settings:", error);

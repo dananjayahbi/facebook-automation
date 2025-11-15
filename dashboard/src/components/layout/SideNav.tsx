@@ -21,43 +21,69 @@ export default function SideNav() {
   const { data: session } = useSession();
   const { activePage } = useFacebookPage();
   
-  // Always initialize with default values to match server render
-  const [layoutSettings, setLayoutSettings] = useState<LayoutSettings>({
-    showGenerateContent: true,
-    showViewContent: true,
-    showUploadContent: true,
-  });
+  // Create default settings from layoutNavigationItems to include ALL pages
+  const getDefaultSettings = (): LayoutSettings => {
+    const defaults: Record<string, boolean> = {
+      showGenerateContent: true,
+      showViewContent: true,
+      showUploadContent: true,
+    };
+    
+    // Add all toggleable items from layoutNavigationItems
+    layoutNavigationItems.forEach(item => {
+      if (!item.locked && item.settingsKey) {
+        defaults[item.settingsKey] = true;
+      }
+    });
+    
+    return defaults as LayoutSettings;
+  };
+  
+  // Always initialize with defaults that include ALL navigation items
+  const [layoutSettings, setLayoutSettings] = useState<LayoutSettings>(getDefaultSettings());
 
   const [isMounted, setIsMounted] = useState(false);
 
   const fetchLayoutSettings = async () => {
     if (!activePage) {
       // If no active page, use default settings
-      setLayoutSettings({
+      const defaults = {
         showGenerateContent: true,
         showViewContent: true,
         showUploadContent: true,
-      });
+      };
+      console.log('[SideNav] No active page, using basic defaults:', defaults);
+      setLayoutSettings(defaults);
       return;
     }
 
     try {
+      console.log('[SideNav] Fetching settings from API for page:', activePage.name);
       const res = await fetch(`/api/facebook-page-settings?facebookPageId=${activePage.id}`);
       const data = await res.json();
-      const settings: LayoutSettings = {
-        showGenerateContent: data.showGenerateContent,
-        showViewContent: data.showViewContent,
-        showUploadContent: data.showUploadContent,
-      };
+      console.log('[SideNav] API response:', data);
       
-      setLayoutSettings(settings);
+      // Extract only boolean settings fields (exclude id, timestamps, facebookPageId, etc.)
+      const settings: Record<string, boolean> = {};
+      for (const key in data) {
+        if (typeof data[key] === 'boolean') {
+          settings[key] = data[key];
+        }
+      }
+      
+      console.log('[SideNav] Extracted boolean settings:', settings);
+      setLayoutSettings(settings as LayoutSettings);
       
       // Update localStorage with page-specific key
       if (typeof window !== "undefined") {
+        console.log('[SideNav] Saving to localStorage:', {
+          key: `layoutSettings_${activePage.id}`,
+          value: settings
+        });
         localStorage.setItem(`layoutSettings_${activePage.id}`, JSON.stringify(settings));
       }
     } catch (err) {
-      console.error("Error fetching layout settings:", err);
+      console.error("[SideNav] Error fetching layout settings:", err);
     }
   };
 
@@ -67,13 +93,30 @@ export default function SideNav() {
     // Read from localStorage AFTER first render to avoid hydration mismatch
     if (typeof window !== "undefined" && activePage) {
       const stored = localStorage.getItem(`layoutSettings_${activePage.id}`);
+      console.log('[SideNav] Reading from localStorage:', {
+        key: `layoutSettings_${activePage.id}`,
+        value: stored,
+        parsed: stored ? JSON.parse(stored) : null,
+        activePage: activePage.name
+      });
+      
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
-          setLayoutSettings(parsed);
+          // Merge stored settings with defaults to include any newly added pages
+          const defaults = getDefaultSettings();
+          const merged = { ...defaults, ...parsed };
+          console.log('[SideNav] Merged settings:', {
+            defaults,
+            parsed,
+            merged
+          });
+          setLayoutSettings(merged);
         } catch (err) {
-          console.error("Error parsing localStorage:", err);
+          console.error("[SideNav] Error parsing localStorage:", err);
         }
+      } else {
+        console.log('[SideNav] No localStorage found, using defaults:', getDefaultSettings());
       }
     }
 

@@ -1,4 +1,4 @@
-import { Users, Blinds, ScanEye, Settings, FileUp, TestTube, Facebook, Layers } from "lucide-react";
+import { Users, Blinds, ScanEye, Settings, FileUp, TestTube, Facebook, Layers, NotepadTextDashed } from "lucide-react";
 
 /**
  * Navigation Configuration
@@ -64,5 +64,15 @@ export const navigationItems: NavItem[] = [
     name: "Facebook Pages Management",
     href: "/facebook-pages-management",
     icon: Layers,
+  },
+  {
+    name: "Quote Content Upload Page",
+    href: "/quote-content-upload",
+    icon: NotepadTextDashed,
+  },
+  {
+    name: "Hey",
+    href: "/hey",
+    icon: TestTube,
   },
 ];
