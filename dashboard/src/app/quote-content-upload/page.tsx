@@ -3,14 +3,16 @@
 import { useState, useEffect } from "react";
 import { DashboardLayout } from '@/components/layout';
 import { PageLoader } from '@/components/common';
-import { Eye, Download, Upload, ChevronDown, ChevronUp } from "lucide-react";
+import { Eye, Download, Upload, ChevronDown, ChevronUp, FileDown } from "lucide-react";
 import TemplateModal from "./components/TemplateModal";
 import UploadCSVModal from "./components/UploadCSVModal";
+import ExportDataModal from "./components/ExportDataModal";
 import QuotesTable from "./components/QuotesTable";
 
 export default function QuoteContentUploadPage() {
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isInstructionsExpanded, setIsInstructionsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -87,6 +89,14 @@ export default function QuoteContentUploadPage() {
             >
               <Upload className="w-4 h-4" />
               Upload CSV
+            </button>
+
+            <button
+              onClick={() => setShowExportModal(true)}
+              className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+            >
+              <FileDown className="w-4 h-4" />
+              Export Data
             </button>
           </div>
         </div>
@@ -165,6 +175,11 @@ export default function QuoteContentUploadPage() {
           isOpen={showUploadModal}
           onClose={() => setShowUploadModal(false)}
           onSuccess={handleUploadSuccess}
+        />
+
+        <ExportDataModal
+          isOpen={showExportModal}
+          onClose={() => setShowExportModal(false)}
         />
       </div>
     </DashboardLayout>
