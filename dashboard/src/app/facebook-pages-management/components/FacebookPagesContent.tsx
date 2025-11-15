@@ -26,7 +26,7 @@ export function FacebookPagesContent() {
   const [editingPage, setEditingPage] = useState<FacebookPage | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [pageToDelete, setPageToDelete] = useState<FacebookPage | null>(null);
-  const { refreshPages } = useFacebookPage();
+  const { refreshPages, activePage, setActivePage } = useFacebookPage();
 
   useEffect(() => {
     fetchPages();
@@ -154,6 +154,24 @@ export function FacebookPagesContent() {
     }
   };
 
+  const handleSetAsDefault = async (page: FacebookPage) => {
+    if (!page.isActive) {
+      toast.error("Cannot set inactive page as default. Please activate it first.");
+      return;
+    }
+    
+    setActionLoading(page.id);
+    try {
+      await setActivePage(page);
+      toast.success(`${page.name} is now your default page`);
+    } catch (error) {
+      console.error("Error setting default page:", error);
+      toast.error("An error occurred while setting default page");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   if (loading) {
     return (
       <ProtectedPage requireRole={["SUPERADMIN"]}>
@@ -199,6 +217,7 @@ export function FacebookPagesContent() {
                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Description</th>
                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Page ID</th>
                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Status</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Default</th>
                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Created</th>
                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Actions</th>
                   </tr>
@@ -220,11 +239,29 @@ export function FacebookPagesContent() {
                           {page.isActive ? 'Active' : 'Inactive'}
                         </span>
                       </td>
+                      <td className="py-3 px-4 text-sm">
+                        {activePage?.id === page.id ? (
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                            Default
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 text-xs">-</span>
+                        )}
+                      </td>
                       <td className="py-3 px-4 text-sm text-gray-600">
                         {new Date(page.createdAt).toLocaleDateString()}
                       </td>
                       <td className="py-3 px-4 text-sm">
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
+                          {activePage?.id !== page.id && page.isActive && (
+                            <button
+                              onClick={() => handleSetAsDefault(page)}
+                              disabled={actionLoading === page.id}
+                              className="px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 text-xs"
+                            >
+                              Set as Default
+                            </button>
+                          )}
                           <button
                             onClick={() => handleEditPage(page)}
                             disabled={actionLoading === page.id}
