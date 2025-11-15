@@ -6,7 +6,7 @@ import prisma from "@/lib/prisma";
 // PATCH - Update a Facebook page (SUPERADMIN only)
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -23,6 +23,7 @@ export async function PATCH(
       );
     }
 
+    const { id } = await params;
     const body = await request.json();
     const { name, description, pageId, isActive } = body;
 
@@ -34,7 +35,7 @@ export async function PATCH(
     if (isActive !== undefined) updateData.isActive = isActive;
 
     const page = await prisma.facebookPage.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
     });
 
@@ -59,7 +60,7 @@ export async function PATCH(
 // DELETE - Delete a Facebook page (SUPERADMIN only)
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -76,8 +77,10 @@ export async function DELETE(
       );
     }
 
+    const { id } = await params;
+
     await prisma.facebookPage.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json(

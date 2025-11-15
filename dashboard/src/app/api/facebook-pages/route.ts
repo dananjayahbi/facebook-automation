@@ -3,8 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
-// GET - Fetch all Facebook pages (filtered by user role)
-export async function GET() {
+// GET - Fetch all Facebook pages (filtered by user role and query parameters)
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -12,11 +12,17 @@ export async function GET() {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    // Get all active Facebook pages
+    const { searchParams } = new URL(request.url);
+    const includeInactive = searchParams.get("includeInactive") === "true";
+
+    // If includeInactive is true and user is SUPERADMIN, return all pages
+    // Otherwise, return only active pages
+    const whereClause = (includeInactive && session.user.role === "SUPERADMIN") 
+      ? {} 
+      : { isActive: true };
+
     const pages = await prisma.facebookPage.findMany({
-      where: {
-        isActive: true,
-      },
+      where: whereClause,
       orderBy: {
         name: "asc",
       },

@@ -34,7 +34,8 @@ export function FacebookPagesContent() {
 
   const fetchPages = async () => {
     try {
-      const response = await fetch("/api/facebook-pages");
+      // Include inactive pages for management view
+      const response = await fetch("/api/facebook-pages?includeInactive=true");
 
       if (response.ok) {
         const data = await response.json();
@@ -112,6 +113,8 @@ export function FacebookPagesContent() {
       if (response.ok) {
         toast.success("Facebook page deleted successfully");
         await fetchPages();
+        // Refresh the Facebook pages in the context to update the header dropdown
+        await refreshPages();
       } else {
         const data = await response.json();
         toast.error(data.message || "Failed to delete page");
@@ -137,6 +140,8 @@ export function FacebookPagesContent() {
       if (response.ok) {
         toast.success(`Page ${!page.isActive ? 'activated' : 'deactivated'} successfully`);
         await fetchPages();
+        // Refresh the Facebook pages in the context to update the header dropdown
+        await refreshPages();
       } else {
         const data = await response.json();
         toast.error(data.message || "Failed to update page status");
