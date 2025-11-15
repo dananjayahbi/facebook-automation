@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Loader2, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import Masonry from "react-masonry-css";
+import SkeletonCard from "./SkeletonCard";
 
 interface BackgroundImage {
   id: string;
@@ -53,13 +54,14 @@ export default function MasonryGrid({ refreshTrigger }: MasonryGridProps) {
       );
 
       if (!response.ok) {
-        throw new Error("Failed to fetch images");
+        const errorText = await response.text();
+        console.error('API Error:', response.status, errorText);
+        throw new Error(`Failed to fetch images: ${response.status}`);
       }
 
       const data = await response.json();
 
       if (append) {
-        console.log('Load More fetched images:', data.images.length);
         setNewlyLoadedImages(data.images); // Store newly loaded images separately
         setImages((prev) => [...prev, ...data.images]);
         // If no new images, stop loading immediately
@@ -88,39 +90,24 @@ export default function MasonryGrid({ refreshTrigger }: MasonryGridProps) {
 
   // Handle image load - track when images finish loading
   const handleImageLoad = () => {
-    setLoadedImagesCount((prev) => {
-      console.log('Image loaded, count:', prev + 1);
-      return prev + 1;
-    });
+    setLoadedImagesCount((prev) => prev + 1);
   };
 
   // Handle Load More image load
   const handleLoadMoreImageLoad = () => {
-    setLoadMoreImagesCount((prev) => {
-      console.log('Load More image loaded, count:', prev + 1);
-      return prev + 1;
-    });
+    setLoadMoreImagesCount((prev) => prev + 1);
   };
 
   // Effect to hide loading when all initial images are loaded
   useEffect(() => {
-    console.log('Loading check:', { loading, imagesLength: images.length, loadedImagesCount });
     if (loading && images.length > 0 && loadedImagesCount >= images.length) {
-      console.log('Setting loading to false');
       setLoading(false);
     }
   }, [loading, images.length, loadedImagesCount]);
 
   // Effect to hide loadingMore when all newly loaded images are loaded
   useEffect(() => {
-    console.log('Load More check:', { 
-      loadingMore, 
-      newlyLoadedImagesLength: newlyLoadedImages.length, 
-      loadMoreImagesCount,
-      newlyLoadedImages: newlyLoadedImages.map(img => img.filename)
-    });
     if (loadingMore && newlyLoadedImages.length > 0 && loadMoreImagesCount >= newlyLoadedImages.length) {
-      console.log('Setting loadingMore to false - all images loaded');
       // Add a small delay to ensure images are rendered
       setTimeout(() => {
         setLoadingMore(false);
@@ -205,30 +192,9 @@ export default function MasonryGrid({ refreshTrigger }: MasonryGridProps) {
           className="flex -ml-4 w-auto"
           columnClassName="pl-4 bg-clip-padding"
         >
-          {Array.from({ length: 20 }).map((_, index) => {
-            // Use a pattern of fixed heights to avoid hydration mismatch
-            const heights = [300, 250, 350, 280, 320, 270, 340, 290, 310, 260];
-            const height = heights[index % heights.length];
-            
-            return (
-              <div
-                key={`skeleton-${index}`}
-                className="mb-4 bg-white rounded-lg shadow-md overflow-hidden animate-pulse"
-              >
-                {/* Skeleton Image - fixed height pattern */}
-                <div 
-                  className="w-full bg-gray-200" 
-                  style={{ height: `${height}px` }}
-                />
-
-                {/* Skeleton Info */}
-                <div className="p-3 space-y-2">
-                  <div className="h-3 bg-gray-200 rounded w-3/4" />
-                  <div className="h-3 bg-gray-200 rounded w-1/2" />
-                </div>
-              </div>
-            );
-          })}
+          {Array.from({ length: 20 }).map((_, index) => (
+            <SkeletonCard key={`skeleton-${index}`} index={index} />
+          ))}
         </Masonry>
       </div>
     );
@@ -316,30 +282,9 @@ export default function MasonryGrid({ refreshTrigger }: MasonryGridProps) {
         ))}
 
         {/* Skeleton Loading Cards */}
-        {loadingMore && Array.from({ length: 20 }).map((_, index) => {
-          // Use a pattern of fixed heights to avoid hydration mismatch
-          const heights = [300, 250, 350, 280, 320, 270, 340, 290, 310, 260];
-          const height = heights[index % heights.length];
-          
-          return (
-            <div
-              key={`skeleton-load-more-${index}`}
-              className="mb-4 bg-white rounded-lg shadow-md overflow-hidden animate-pulse"
-            >
-              {/* Skeleton Image - fixed height pattern */}
-              <div 
-                className="w-full bg-gray-200" 
-                style={{ height: `${height}px` }}
-              />
-
-              {/* Skeleton Info */}
-              <div className="p-3 space-y-2">
-                <div className="h-3 bg-gray-200 rounded w-3/4" />
-                <div className="h-3 bg-gray-200 rounded w-1/2" />
-              </div>
-            </div>
-          );
-        })}
+        {loadingMore && Array.from({ length: 20 }).map((_, index) => (
+          <SkeletonCard key={`skeleton-load-more-${index}`} index={index} />
+        ))}
       </Masonry>
 
       {/* Load More Button */}
