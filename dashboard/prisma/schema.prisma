@@ -35,9 +35,10 @@ model User {
   updatedAt DateTime @updatedAt
   
   // Relations
-  quotes      Quote[]
-  backgrounds Background[]
-  activePage  UserActivePage?
+  quotes         Quote[]
+  uploadedQuotes UploadedQuote[]
+  backgrounds    Background[]
+  activePage     UserActivePage?
 }
 
 model FacebookPage {
@@ -51,6 +52,7 @@ model FacebookPage {
   
   // Relations
   quotes         Quote[]
+  uploadedQuotes UploadedQuote[]
   backgrounds    Background[]
   activeUsers    UserActivePage[]
   layoutSettings FacebookPageLayoutSettings?
@@ -79,6 +81,33 @@ model Quote {
   @@index([facebookPageId])
   @@index([createdById])
   @@index([createdAt])
+}
+
+model UploadedQuote {
+  id            String       @id @default(cuid())
+  text          String       @db.Text
+  author        String?
+  category      String?
+  source        String?      // Source/origin of the quote
+  tags          String?      // Comma-separated tags
+  isUsed        Boolean      @default(false)  // Track if quote has been used
+  
+  // Facebook Page relation
+  facebookPageId String
+  facebookPage   FacebookPage @relation(fields: [facebookPageId], references: [id], onDelete: Cascade)
+  
+  // User relation (who uploaded it)
+  uploadedById  String
+  uploadedBy    User         @relation(fields: [uploadedById], references: [id])
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  
+  @@index([facebookPageId])
+  @@index([uploadedById])
+  @@index([createdAt])
+  @@index([category])
+  @@index([isUsed])
 }
 
 model Background {
@@ -163,7 +192,8 @@ model FacebookPageLayoutSettings {
   facebookPage          FacebookPage @relation(fields: [facebookPageId], references: [id], onDelete: Cascade)
   
   // Navigation visibility settings for this Facebook Page
-  showGenerateContent   Boolean      @default(true)  showQuoteContentUpload Boolean      @default(true)
+  showGenerateContent   Boolean      @default(true)
+  showQuoteContentUpload Boolean      @default(true)
   showViewContent       Boolean      @default(true)
   showUploadContent     Boolean      @default(true)
   
