@@ -222,17 +222,19 @@ model UserActivePage {
 }
 
 model BackgroundImage {
-  id            String   @id @default(cuid())
-  filename      String   // UUID-based filename
-  path          String   // Relative path to the image
-  tags          String[] @default([]) // Array of tags for searching
-  isFavorite    Boolean  @default(false) // Mark as favorite
-  uploadedById  String
-  uploadedBy    User     @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  filename            String   // UUID-based filename
+  path                String   // Relative path to the image
+  tags                String[] @default([]) // Array of tags for searching
+  isFavorite          Boolean  @default(false) // Mark as favorite
+  isMarkedForDeletion Boolean  @default(false) // Mark for bulk deletion
+  uploadedById        String
+  uploadedBy          User     @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
   
   @@index([uploadedById])
   @@index([createdAt])
   @@index([isFavorite])
+  @@index([isMarkedForDeletion])
 }

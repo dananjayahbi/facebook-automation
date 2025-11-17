@@ -163,11 +163,24 @@ export async function DELETE(request: NextRequest) {
       where: { id },
     });
 
-    // Optionally delete the physical file (commented out for safety)
-    // const fs = require('fs');
-    // if (fs.existsSync(image.path)) {
-    //   fs.unlinkSync(image.path);
-    // }
+    // Delete the physical file
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      
+      // Construct the full file path
+      const filePath = path.join(process.cwd(), 'src', 'assets', 'background-images', image.filename);
+      
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log(`Deleted physical file: ${filePath}`);
+      } else {
+        console.warn(`File not found: ${filePath}`);
+      }
+    } catch (fileError) {
+      console.error("Error deleting physical file:", fileError);
+      // Don't fail the entire operation if file deletion fails
+    }
 
     return NextResponse.json(
       { message: "Image deleted successfully" },

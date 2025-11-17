@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2, Trash2, Eye, Edit2, Star } from "lucide-react";
+import { Loader2, Trash2, Eye, Edit2, Star, Ban } from "lucide-react";
 import toast from "react-hot-toast";
 import Masonry from "react-masonry-css";
 import SkeletonCard from "./SkeletonCard";
@@ -15,6 +15,7 @@ interface BackgroundImage {
   path: string;
   tags: string[];
   isFavorite: boolean;
+  isMarkedForDeletion: boolean;
   createdAt: string;
   uploadedBy: {
     name: string | null;
@@ -25,9 +26,10 @@ interface BackgroundImage {
 interface MasonryGridProps {
   refreshTrigger: number;
   searchQuery?: string;
+  hideMarked?: boolean;
 }
 
-export default function MasonryGrid({ refreshTrigger, searchQuery = "" }: MasonryGridProps) {
+export default function MasonryGrid({ refreshTrigger, searchQuery = "", hideMarked = false }: MasonryGridProps) {
   const [images, setImages] = useState<BackgroundImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -45,6 +47,7 @@ export default function MasonryGrid({ refreshTrigger, searchQuery = "" }: Masonr
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<BackgroundImage | null>(null);
   const [favoriteLoading, setFavoriteLoading] = useState<string | null>(null);
+  const [markLoading, setMarkLoading] = useState<string | null>(null);
 
   // Set mounted state in useEffect to avoid hydration mismatch
   useEffect(() => {
@@ -74,17 +77,22 @@ export default function MasonryGrid({ refreshTrigger, searchQuery = "" }: Masonr
       }
 
       const data = await response.json();
+      
+      // Filter out marked images if hideMarked is true
+      const filteredImages = hideMarked 
+        ? data.images.filter((img: BackgroundImage) => !img.isMarkedForDeletion)
+        : data.images;
 
       if (append) {
-        setNewlyLoadedImages(data.images); // Store newly loaded images separately
-        setImages((prev) => [...prev, ...data.images]);
+        setNewlyLoadedImages(filteredImages); // Store newly loaded images separately
+        setImages((prev) => [...prev, ...filteredImages]);
         // If no new images, stop loading immediately
-        if (data.images.length === 0) {
+        if (filteredImages.length === 0) {
           setLoadingMore(false);
         }
         // Otherwise, wait for images to load via onLoad event
       } else {
-        setImages(data.images);
+        setImages(filteredImages);
         // If no images, stop loading immediately
         if (data.images.length === 0) {
           setLoading(false);
@@ -146,7 +154,7 @@ export default function MasonryGrid({ refreshTrigger, searchQuery = "" }: Masonr
     setLoadedImagesCount(0);
     fetchImages(1, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshTrigger, searchQuery]);
+  }, [refreshTrigger, searchQuery, hideMarked]);
 
   // Delete image
   const handleDeleteClick = (image: BackgroundImage) => {
@@ -238,6 +246,42 @@ export default function MasonryGrid({ refreshTrigger, searchQuery = "" }: Masonr
     }
   };
 
+  // Toggle mark for deletion
+  const handleToggleMark = async (image: BackgroundImage) => {
+    setMarkLoading(image.id);
+
+    try {
+      const response = await fetch(`/api/background-images/${image.id}/mark-delete`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ isMarkedForDeletion: !image.isMarkedForDeletion }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to toggle mark for deletion");
+      }
+
+      const data = await response.json();
+      
+      setImages((prev) =>
+        prev.map((img) =>
+          img.id === image.id ? { ...img, isMarkedForDeletion: data.isMarkedForDeletion } : img
+        )
+      );
+
+      toast.success(
+        data.isMarkedForDeletion ? "Marked for deletion" : "Unmarked"
+      );
+    } catch (error) {
+      console.error("Error toggling mark:", error);
+      toast.error("Failed to update mark status");
+    } finally {
+      setMarkLoading(null);
+    }
+  };
+
   if (loading && !isMounted) {
     // Show nothing during SSR to avoid hydration mismatch
     return null;
@@ -322,12 +366,21 @@ export default function MasonryGrid({ refreshTrigger, searchQuery = "" }: Masonr
         {images.map((image) => (
           <div
             key={image.id}
-            className="mb-4 relative group bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow"
+            className={`mb-4 relative group bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow ${
+              image.isMarkedForDeletion ? "ring-2 ring-orange-500" : ""
+            }`}
           >
             {/* Favorite Badge */}
             {image.isFavorite && (
               <div className="absolute top-2 left-2 z-10 bg-yellow-500 text-white p-1.5 rounded-full shadow-lg">
                 <Star className="w-4 h-4 fill-current" />
+              </div>
+            )}
+            
+            {/* Marked for Deletion Badge */}
+            {image.isMarkedForDeletion && (
+              <div className="absolute top-2 right-2 z-10 bg-orange-600 text-white px-2 py-1 rounded-md shadow-lg text-xs font-semibold">
+                Marked for Deletion
               </div>
             )}
 
@@ -376,6 +429,24 @@ export default function MasonryGrid({ refreshTrigger, searchQuery = "" }: Masonr
                       <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
                       <Star className={`w-5 h-5 ${image.isFavorite ? "fill-current" : ""}`} />
+                    )}
+                  </button>
+
+                  {/* Mark for Deletion Button */}
+                  <button
+                    onClick={() => handleToggleMark(image)}
+                    disabled={markLoading === image.id}
+                    className={`${
+                      image.isMarkedForDeletion
+                        ? "bg-orange-600 hover:bg-orange-700"
+                        : "bg-gray-600 hover:bg-gray-700"
+                    } text-white p-3 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
+                    title={image.isMarkedForDeletion ? "Unmark for deletion" : "Mark for deletion"}
+                  >
+                    {markLoading === image.id ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Ban className="w-5 h-5" />
                     )}
                   </button>
 
