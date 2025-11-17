@@ -15,10 +15,31 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
     const skip = (page - 1) * limit;
+    const searchQuery = searchParams.get("search") || "";
 
-    // Fetch images with pagination
+    // Build where clause for search
+    const whereClause = searchQuery
+      ? {
+          OR: [
+            {
+              tags: {
+                hasSome: searchQuery.toLowerCase().split(/\s+/).filter(Boolean),
+              },
+            },
+            {
+              filename: {
+                contains: searchQuery,
+                mode: "insensitive" as const,
+              },
+            },
+          ],
+        }
+      : {};
+
+    // Fetch images with pagination and optional search
     const [images, totalCount] = await Promise.all([
       prisma.backgroundImage.findMany({
+        where: whereClause,
         skip,
         take: limit,
         orderBy: {
@@ -33,7 +54,9 @@ export async function GET(request: NextRequest) {
           },
         },
       }),
-      prisma.backgroundImage.count(),
+      prisma.backgroundImage.count({
+        where: whereClause,
+      }),
     ]);
 
     return NextResponse.json(

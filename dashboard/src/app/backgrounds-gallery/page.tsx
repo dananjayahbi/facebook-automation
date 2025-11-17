@@ -5,13 +5,23 @@ import { DashboardLayout } from '@/components/layout';
 import { Upload } from "lucide-react";
 import UploadBackgroundsModal from "./components/UploadBackgroundsModal";
 import MasonryGrid from "./components/MasonryGrid";
+import FloatingSearchButton from "./components/FloatingSearchButton";
 
 export default function BackgroundsGallery() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleUploadSuccess = () => {
     setRefreshTrigger((prev) => prev + 1);
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery("");
   };
 
   return (
@@ -35,7 +45,16 @@ export default function BackgroundsGallery() {
         </div>
 
         {/* Masonry Grid */}
-        <MasonryGrid refreshTrigger={refreshTrigger} />
+        <MasonryGrid 
+          refreshTrigger={refreshTrigger} 
+          searchQuery={searchQuery}
+        />
+
+        {/* Floating Search Button */}
+        <FloatingSearchButton
+          onSearch={handleSearch}
+          onClear={handleClearSearch}
+        />
 
         {/* Upload Modal */}
         <UploadBackgroundsModal

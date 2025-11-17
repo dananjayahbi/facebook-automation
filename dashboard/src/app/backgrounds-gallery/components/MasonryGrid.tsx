@@ -24,9 +24,10 @@ interface BackgroundImage {
 
 interface MasonryGridProps {
   refreshTrigger: number;
+  searchQuery?: string;
 }
 
-export default function MasonryGrid({ refreshTrigger }: MasonryGridProps) {
+export default function MasonryGrid({ refreshTrigger, searchQuery = "" }: MasonryGridProps) {
   const [images, setImages] = useState<BackgroundImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -61,8 +62,9 @@ export default function MasonryGrid({ refreshTrigger }: MasonryGridProps) {
         setLoadedImagesCount(0); // Reset count when fetching initial images
       }
 
+      const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : "";
       const response = await fetch(
-        `/api/background-images?page=${pageNum}&limit=20`
+        `/api/background-images?page=${pageNum}&limit=20${searchParam}`
       );
 
       if (!response.ok) {
@@ -144,7 +146,7 @@ export default function MasonryGrid({ refreshTrigger }: MasonryGridProps) {
     setLoadedImagesCount(0);
     fetchImages(1, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshTrigger]);
+  }, [refreshTrigger, searchQuery]);
 
   // Delete image
   const handleDeleteClick = (image: BackgroundImage) => {
@@ -278,9 +280,13 @@ export default function MasonryGrid({ refreshTrigger }: MasonryGridProps) {
   if (images.length === 0) {
     return (
       <div className="text-center py-20">
-        <p className="text-gray-500">No images uploaded yet</p>
+        <p className="text-gray-500">
+          {searchQuery ? "No images found matching your search" : "No images uploaded yet"}
+        </p>
         <p className="text-sm text-gray-400 mt-1">
-          Click "Upload Backgrounds" to add images to your gallery
+          {searchQuery
+            ? "Try different search terms or clear the search"
+            : 'Click "Upload Backgrounds" to add images to your gallery'}
         </p>
       </div>
     );
