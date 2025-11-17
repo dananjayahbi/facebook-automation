@@ -1,15 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, Eye, Edit2, Star } from "lucide-react";
 import toast from "react-hot-toast";
 import Masonry from "react-masonry-css";
 import SkeletonCard from "./SkeletonCard";
+import DeleteConfirmationModal from "./DeleteConfirmationModal";
+import ImageViewModal from "./ImageViewModal";
+import ImageEditModal from "./ImageEditModal";
 
 interface BackgroundImage {
   id: string;
   filename: string;
   path: string;
+  tags: string[];
+  isFavorite: boolean;
   createdAt: string;
   uploadedBy: {
     name: string | null;
@@ -32,6 +37,13 @@ export default function MasonryGrid({ refreshTrigger }: MasonryGridProps) {
   const [loadMoreImagesCount, setLoadMoreImagesCount] = useState(0);
   const [newlyLoadedImages, setNewlyLoadedImages] = useState<BackgroundImage[]>([]);
   const [isMounted, setIsMounted] = useState(false);
+  
+  // Modal states
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<BackgroundImage | null>(null);
+  const [favoriteLoading, setFavoriteLoading] = useState<string | null>(null);
 
   // Set mounted state in useEffect to avoid hydration mismatch
   useEffect(() => {
@@ -135,15 +147,18 @@ export default function MasonryGrid({ refreshTrigger }: MasonryGridProps) {
   }, [refreshTrigger]);
 
   // Delete image
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this image?")) {
-      return;
-    }
+  const handleDeleteClick = (image: BackgroundImage) => {
+    setSelectedImage(image);
+    setDeleteModalOpen(true);
+  };
 
-    setDeleteLoading(id);
+  const handleDelete = async () => {
+    if (!selectedImage) return;
+
+    setDeleteLoading(selectedImage.id);
 
     try {
-      const response = await fetch(`/api/background-images?id=${id}`, {
+      const response = await fetch(`/api/background-images?id=${selectedImage.id}`, {
         method: "DELETE",
       });
 
@@ -152,12 +167,72 @@ export default function MasonryGrid({ refreshTrigger }: MasonryGridProps) {
       }
 
       toast.success("Image deleted successfully");
-      setImages((prev) => prev.filter((img) => img.id !== id));
+      setImages((prev) => prev.filter((img) => img.id !== selectedImage.id));
+      setDeleteModalOpen(false);
+      setSelectedImage(null);
     } catch (error) {
       console.error("Error deleting image:", error);
       toast.error("Failed to delete image");
     } finally {
       setDeleteLoading(null);
+    }
+  };
+
+  // View image
+  const handleViewClick = (image: BackgroundImage) => {
+    setSelectedImage(image);
+    setViewModalOpen(true);
+  };
+
+  // Edit image tags
+  const handleEditClick = (image: BackgroundImage) => {
+    setSelectedImage(image);
+    setEditModalOpen(true);
+  };
+
+  const handleTagsUpdate = (updatedTags: string[]) => {
+    if (!selectedImage) return;
+    
+    setImages((prev) =>
+      prev.map((img) =>
+        img.id === selectedImage.id ? { ...img, tags: updatedTags } : img
+      )
+    );
+  };
+
+  // Toggle favorite
+  const handleToggleFavorite = async (image: BackgroundImage) => {
+    setFavoriteLoading(image.id);
+
+    try {
+      const response = await fetch(`/api/background-images/${image.id}/favorite`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ isFavorite: !image.isFavorite }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to toggle favorite");
+      }
+
+      const data = await response.json();
+      
+      setImages((prev) =>
+        prev.map((img) =>
+          img.id === image.id ? { ...img, isFavorite: data.isFavorite } : img
+        )
+      );
+
+      toast.success(
+        data.isFavorite ? "Added to favorites" : "Removed from favorites"
+      );
+    } catch (error) {
+      console.error("Error toggling favorite:", error);
+      toast.error("Failed to update favorite status");
+    } finally {
+      setFavoriteLoading(null);
     }
   };
 
@@ -243,6 +318,13 @@ export default function MasonryGrid({ refreshTrigger }: MasonryGridProps) {
             key={image.id}
             className="mb-4 relative group bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow"
           >
+            {/* Favorite Badge */}
+            {image.isFavorite && (
+              <div className="absolute top-2 left-2 z-10 bg-yellow-500 text-white p-1.5 rounded-full shadow-lg">
+                <Star className="w-4 h-4 fill-current" />
+              </div>
+            )}
+
             {/* Image */}
             <div className="relative w-full">
               <img
@@ -253,24 +335,76 @@ export default function MasonryGrid({ refreshTrigger }: MasonryGridProps) {
               />
 
               {/* Overlay on hover */}
-              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                <button
-                  onClick={() => handleDelete(image.id)}
-                  disabled={deleteLoading === image.id}
-                  className="bg-red-600 hover:bg-red-700 text-white p-3 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Delete image"
-                >
-                  {deleteLoading === image.id ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
+              <div className="absolute inset-0 bg-black/20 backdrop-blur-sm group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                <div className="flex gap-2">
+                  {/* View Button */}
+                  <button
+                    onClick={() => handleViewClick(image)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full transition-colors"
+                    title="View image"
+                  >
+                    <Eye className="w-5 h-5" />
+                  </button>
+
+                  {/* Edit Button */}
+                  <button
+                    onClick={() => handleEditClick(image)}
+                    className="bg-green-600 hover:bg-green-700 text-white p-3 rounded-full transition-colors"
+                    title="Edit tags"
+                  >
+                    <Edit2 className="w-5 h-5" />
+                  </button>
+
+                  {/* Favorite Button */}
+                  <button
+                    onClick={() => handleToggleFavorite(image)}
+                    disabled={favoriteLoading === image.id}
+                    className={`${
+                      image.isFavorite
+                        ? "bg-yellow-500 hover:bg-yellow-600"
+                        : "bg-gray-600 hover:bg-gray-700"
+                    } text-white p-3 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
+                    title={image.isFavorite ? "Remove from favorites" : "Add to favorites"}
+                  >
+                    {favoriteLoading === image.id ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Star className={`w-5 h-5 ${image.isFavorite ? "fill-current" : ""}`} />
+                    )}
+                  </button>
+
+                  {/* Delete Button */}
+                  <button
+                    onClick={() => handleDeleteClick(image)}
+                    className="bg-red-600 hover:bg-red-700 text-white p-3 rounded-full transition-colors"
+                    title="Delete image"
+                  >
                     <Trash2 className="w-5 h-5" />
-                  )}
-                </button>
+                  </button>
+                </div>
               </div>
             </div>
 
             {/* Info */}
             <div className="p-3">
+              {/* Tags */}
+              {image.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {image.tags.slice(0, 3).map((tag) => (
+                    <span
+                      key={tag}
+                      className="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-full"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                  {image.tags.length > 3 && (
+                    <span className="text-xs text-gray-500">
+                      +{image.tags.length - 3} more
+                    </span>
+                  )}
+                </div>
+              )}
               <p className="text-xs text-gray-500 truncate">
                 {image.uploadedBy.name || image.uploadedBy.email}
               </p>
@@ -305,6 +439,44 @@ export default function MasonryGrid({ refreshTrigger }: MasonryGridProps) {
           No more images to load
         </div>
       )}
+
+      {/* Modals */}
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setSelectedImage(null);
+        }}
+        onConfirm={handleDelete}
+        imageName={selectedImage?.filename}
+        isDeleting={deleteLoading !== null}
+      />
+
+      <ImageViewModal
+        isOpen={viewModalOpen}
+        onClose={() => {
+          setViewModalOpen(false);
+          setSelectedImage(null);
+        }}
+        imageUrl={
+          selectedImage
+            ? `/api/background-images/serve/${selectedImage.filename}`
+            : ""
+        }
+        imageName={selectedImage?.filename || ""}
+      />
+
+      <ImageEditModal
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setSelectedImage(null);
+        }}
+        imageId={selectedImage?.id || ""}
+        imageName={selectedImage?.filename || ""}
+        initialTags={selectedImage?.tags || []}
+        onUpdate={handleTagsUpdate}
+      />
     </div>
   );
 }
